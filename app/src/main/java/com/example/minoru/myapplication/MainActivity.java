@@ -1,8 +1,11 @@
 package com.example.minoru.myapplication;
 
+import android.content.ContentResolver;
 import android.os.Bundle;
+import android.provider.Settings;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
+import android.support.v4.content.ContentResolverCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.View;
@@ -22,7 +25,13 @@ public class MainActivity extends AppCompatActivity {
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
+                ContentResolver cr = getContentResolver();
+                StringBuilder sb = new StringBuilder();
+                String timeOut = Settings.System.getString(cr, Settings.System.SCREEN_OFF_TIMEOUT);
+                sb.append("Screen off time out: ");
+                sb.append(timeOut);
+                sb.append(".");
+                Snackbar.make(view, sb.toString(), Snackbar.LENGTH_LONG)
                         .setAction("Action", null).show();
             }
         });
