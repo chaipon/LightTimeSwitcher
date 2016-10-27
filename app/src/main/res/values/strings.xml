@@ -2,4 +2,5 @@
     <string name="app_name">Light Time Switcher</string>
     <string name="action_settings">Settings</string>
     <string name="hoge">mekun</string>
+    <string name="setting_message">秒に設定しました。</string>
 </resources>

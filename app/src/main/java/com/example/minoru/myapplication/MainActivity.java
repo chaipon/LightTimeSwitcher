@@ -2,23 +2,11 @@ package com.example.minoru.myapplication;
 
 import android.app.Activity;
 import android.content.ContentResolver;
-import android.net.Uri;
 import android.os.Bundle;
 import android.provider.Settings;
-import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
-import android.support.v4.content.ContentResolverCompat;
-import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.Toolbar;
 import android.util.Log;
-import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.widget.Toast;
-
-import com.google.android.gms.appindexing.Action;
-import com.google.android.gms.appindexing.AppIndex;
-import com.google.android.gms.common.api.GoogleApiClient;
 
 import static android.provider.Settings.*;
 import static android.widget.Toast.*;
@@ -57,11 +45,11 @@ public class MainActivity extends Activity {
         Settings.System.putInt(cr, Settings.System.SCREEN_OFF_TIMEOUT, newTimeOut);
 
         StringBuilder sb = new StringBuilder();
-        sb.append("Screen off time out from: ");
-        sb.append(timeOut/1000);
-        sb.append(" to: ");
+        //sb.append("Screen off time out from: ");
+        //sb.append(timeOut/1000);
+        //sb.append(" to: ");
         sb.append(newTimeOut/1000);
-        sb.append(".");
+        sb.append(getString(R.string.setting_message));
 
         Log.w("Log", sb.toString());
 
