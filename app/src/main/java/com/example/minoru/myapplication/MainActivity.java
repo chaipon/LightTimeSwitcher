@@ -10,6 +10,7 @@ import android.support.design.widget.Snackbar;
 import android.support.v4.content.ContentResolverCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -19,6 +20,7 @@ import com.google.android.gms.appindexing.Action;
 import com.google.android.gms.appindexing.AppIndex;
 import com.google.android.gms.common.api.GoogleApiClient;
 
+import static android.provider.Settings.*;
 import static android.widget.Toast.*;
 
 public class MainActivity extends Activity {
@@ -36,19 +38,23 @@ public class MainActivity extends Activity {
         Integer timeOut = null;
         try {
             timeOut = Settings.System.getInt(cr, Settings.System.SCREEN_OFF_TIMEOUT);
-            //timeOut = 30 * 1000;
-        } catch (Settings.SettingNotFoundException e) {
+        } catch (SettingNotFoundException e) {
             e.printStackTrace();
         }
         final Integer MinTime = 15 * 1000;
         final Integer MaxTime = 30 * 60 * 1000;
         Integer newTimeOut = null;
-        if(timeOut == MinTime){
+        Log.w("MaxTime", MaxTime.toString());
+        Log.w("MinTime", MinTime.toString());
+        Log.w("timeOut", timeOut.toString());
+        if(timeOut.equals(MinTime)){
+            Log.w("timeOut", "set to max");
             newTimeOut = MaxTime;
         }else{
+            Log.w("timeOut", "set to min ###################### ");
             newTimeOut = MinTime;
         }
-        //Settings.System.putInt(cr, Settings.System.SCREEN_OFF_TIMEOUT, newTimeOut);
+        Settings.System.putInt(cr, Settings.System.SCREEN_OFF_TIMEOUT, newTimeOut);
 
         StringBuilder sb = new StringBuilder();
         sb.append("Screen off time out from: ");
@@ -56,6 +62,8 @@ public class MainActivity extends Activity {
         sb.append(" to: ");
         sb.append(newTimeOut/1000);
         sb.append(".");
+
+        Log.w("Log", sb.toString());
 
         makeText(getApplicationContext(), sb.toString(), LENGTH_SHORT).show();
 
