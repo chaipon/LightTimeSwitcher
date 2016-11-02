@@ -1,9 +1,11 @@
 package com.example.minoru.myapplication;
 
 import android.app.Activity;
+import android.app.NotificationManager;
 import android.content.ContentResolver;
 import android.os.Bundle;
 import android.provider.Settings;
+import android.support.v7.app.NotificationCompat;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -45,15 +47,23 @@ public class MainActivity extends Activity {
         Settings.System.putInt(cr, Settings.System.SCREEN_OFF_TIMEOUT, newTimeOut);
 
         StringBuilder sb = new StringBuilder();
-        //sb.append("Screen off time out from: ");
-        //sb.append(timeOut/1000);
-        //sb.append(" to: ");
         sb.append(newTimeOut/1000);
         sb.append(getString(R.string.setting_message));
 
         Log.w("Log", sb.toString());
 
         makeText(getApplicationContext(), sb.toString(), LENGTH_SHORT).show();
+
+        NotificationCompat.Builder mBuilder = new NotificationCompat.Builder(this);
+        mBuilder.setContentTitle("点灯時間");
+        mBuilder.setContentText(sb);
+        mBuilder.setTicker(sb);
+        mBuilder.setSmallIcon(R.drawable.ic_stat_light_time);
+
+        NotificationManager mNotificationManager =
+                (NotificationManager)getSystemService(getApplicationContext().NOTIFICATION_SERVICE);
+
+        mNotificationManager.notify(1, mBuilder.build());
 
         this.finish();
 
