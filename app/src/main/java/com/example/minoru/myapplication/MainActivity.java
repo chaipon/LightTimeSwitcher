@@ -39,12 +39,18 @@ public class MainActivity extends Activity {
         Log.w("MaxTime", MaxTime.toString());
         Log.w("MinTime", MinTime.toString());
         Log.w("timeOut", timeOut.toString());
+
+        NotificationCompat.Builder mBuilder = new NotificationCompat.Builder(this);
+
+
         if(timeOut.equals(MinTime)){
             Log.w("timeOut", "set to max");
             newTimeOut = MaxTime;
+            mBuilder.setSmallIcon(R.drawable.ic_stat_light_time_long);
         }else{
             Log.w("timeOut", "set to min ###################### ");
             newTimeOut = MinTime;
+            mBuilder.setSmallIcon(R.drawable.ic_stat_light_time_short);
         }
         Settings.System.putInt(cr, Settings.System.SCREEN_OFF_TIMEOUT, newTimeOut);
 
@@ -52,15 +58,14 @@ public class MainActivity extends Activity {
         sb.append(newTimeOut/1000);
         sb.append(getString(R.string.setting_message));
 
+        mBuilder.setContentTitle("点灯時間");
+        mBuilder.setContentText(sb);
+        mBuilder.setTicker(sb);
+
         Log.w("Log", sb.toString());
 
         makeText(getApplicationContext(), sb.toString(), LENGTH_SHORT).show();
 
-        NotificationCompat.Builder mBuilder = new NotificationCompat.Builder(this);
-        mBuilder.setContentTitle("点灯時間");
-        mBuilder.setContentText(sb);
-        mBuilder.setTicker(sb);
-        mBuilder.setSmallIcon(R.drawable.ic_stat_light_time);
 
         PendingIntent pending = PendingIntent.getActivity(this,
                 0,
