@@ -22,72 +22,91 @@ public class MainActivity extends Activity {
      * See https://g.co/AppIndexing/AndroidStudio for more information.
      */
     //private GoogleApiClient client;
+    final Integer MinTime = 15 * 1000;
+    final Integer MaxTime = 30 * 60 * 1000;
+    private Integer mTimeOut = MinTime;
+    private StringBuilder mTimeOutMessage = new StringBuilder();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        ContentResolver cr = getContentResolver();
-        Integer timeOut = null;
-        try {
-            timeOut = Settings.System.getInt(cr, Settings.System.SCREEN_OFF_TIMEOUT);
-        } catch (SettingNotFoundException e) {
-            e.printStackTrace();
-        }
-        final Integer MinTime = 15 * 1000;
-        final Integer MaxTime = 30 * 60 * 1000;
-        Integer newTimeOut = null;
-        Log.w("MaxTime", MaxTime.toString());
-        Log.w("MinTime", MinTime.toString());
-        Log.w("timeOut", timeOut.toString());
 
-        NotificationCompat.Builder mBuilder = new NotificationCompat.Builder(this);
+        switchTimeOut();
 
+        makeTimeOutMessage();
 
-        if(timeOut.equals(MinTime)){
-            Log.w("timeOut", "set to max");
-            newTimeOut = MaxTime;
-            mBuilder.setSmallIcon(R.drawable.ic_stat_light_time_long);
-        }else{
-            Log.w("timeOut", "set to min ###################### ");
-            newTimeOut = MinTime;
-            mBuilder.setSmallIcon(R.drawable.ic_stat_light_time_short);
-        }
-        Settings.System.putInt(cr, Settings.System.SCREEN_OFF_TIMEOUT, newTimeOut);
+        showTimeOutMessageToToast();
 
-        StringBuilder sb = new StringBuilder();
-        sb.append(newTimeOut/1000);
-        sb.append(getString(R.string.setting_message));
+        notifyTimeOut();
 
-        mBuilder.setContentTitle("点灯時間");
-        mBuilder.setContentText(sb);
-        mBuilder.setTicker(sb);
+        this.finish();
+    }
 
-        Log.w("Log", sb.toString());
+    private void notifyTimeOut() {
+        NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(this);
 
-        makeText(getApplicationContext(), sb.toString(), LENGTH_SHORT).show();
+        setNotificationIcon(notificationBuilder);
+        setNotificationText(notificationBuilder);
 
+        setNotificationForever(notificationBuilder);
 
+        setApplicationToPushNotification(notificationBuilder);
+
+        NotificationManager notificationManager =
+                (NotificationManager)getSystemService(getApplicationContext().NOTIFICATION_SERVICE);
+        notificationManager.notify(1, notificationBuilder.build());
+    }
+
+    private void setApplicationToPushNotification(NotificationCompat.Builder notificationBuilder) {
         PendingIntent pending = PendingIntent.getActivity(this,
                 0,
                 new Intent(this, MainActivity.class),
                 0);
-        mBuilder.setContentIntent(pending);
+        notificationBuilder.setContentIntent(pending);
+    }
 
-        NotificationManager mNotificationManager =
-                (NotificationManager)getSystemService(getApplicationContext().NOTIFICATION_SERVICE);
+    private void setNotificationForever(NotificationCompat.Builder notificationBuilder) {
+        notificationBuilder.setOngoing(true);
+    }
 
-        mNotificationManager.notify(1, mBuilder.build());
+    private void setNotificationText(NotificationCompat.Builder notificationBuilder) {
+        notificationBuilder.setContentTitle("点灯時間");
+        notificationBuilder.setContentText(mTimeOutMessage);
+        notificationBuilder.setTicker(mTimeOutMessage);
+    }
 
-        this.finish();
+    private void setNotificationIcon(NotificationCompat.Builder notificationBuilder) {
+        if(mTimeOut.equals(MinTime)){
+            notificationBuilder.setSmallIcon(R.drawable.ic_stat_light_time_long);
+        }else{
+            notificationBuilder.setSmallIcon(R.drawable.ic_stat_light_time_short);
+        }
+    }
 
+    private void makeTimeOutMessage() {
+        mTimeOutMessage.append(mTimeOut/1000);
+        mTimeOutMessage.append(getString(R.string.setting_message));
+    }
 
-        //setContentView(R.layout.activity_main);
-        //Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
-        //setSupportActionBar(toolbar);
+    private void showTimeOutMessageToToast() {
+        makeText(getApplicationContext(), mTimeOutMessage.toString(), LENGTH_SHORT).show();
+    }
 
-        // ATTENTION: This was auto-generated to implement the App Indexing API.
-        // See https://g.co/AppIndexing/AndroidStudio for more information.
-        //client = new GoogleApiClient.Builder(this).addApi(AppIndex.API).build();
+    private void switchTimeOut() {
+        ContentResolver cr = getContentResolver();
+        try {
+            mTimeOut = Settings.System.getInt(cr, Settings.System.SCREEN_OFF_TIMEOUT);
+        } catch (SettingNotFoundException e) {
+            e.printStackTrace();
+        }
+        if(mTimeOut.equals(MinTime)){
+            Log.w("timeOut", "set to max");
+            mTimeOut = MaxTime;
+        }else{
+            Log.w("timeOut", "set to min ###################### ");
+            mTimeOut = MinTime;
+        }
+        Settings.System.putInt(cr, Settings.System.SCREEN_OFF_TIMEOUT, mTimeOut);
     }
 
     @Override
