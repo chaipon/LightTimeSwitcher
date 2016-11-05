@@ -77,9 +77,9 @@ public class MainActivity extends Activity {
 
     private void setNotificationIcon(NotificationCompat.Builder notificationBuilder) {
         if(mTimeOut.equals(MinTime)){
-            notificationBuilder.setSmallIcon(R.drawable.ic_stat_light_time_long);
-        }else{
             notificationBuilder.setSmallIcon(R.drawable.ic_stat_light_time_short);
+        }else{
+            notificationBuilder.setSmallIcon(R.drawable.ic_stat_light_time_long);
         }
     }
 
