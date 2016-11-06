@@ -1,16 +1,10 @@
 package com.example.minoru.myapplication;
 
 import android.app.Activity;
-import android.app.NotificationManager;
-import android.app.PendingIntent;
 import android.content.ContentResolver;
-import android.content.Intent;
 import android.os.Bundle;
 import android.provider.Settings;
-import android.support.v7.app.NotificationCompat;
 import android.util.Log;
-import android.view.Menu;
-import android.view.MenuItem;
 
 import static android.provider.Settings.*;
 import static android.widget.Toast.*;
@@ -30,9 +24,6 @@ public class MainActivity extends Activity {
     public boolean isMinimumTimeOut(){
         return mTimeOut.equals(MinTime);
     }
-    public Integer getTimeOut(){
-        return mTimeOut;
-    }
     public StringBuilder getTimeoutMessage(){
         return mTimeOutMessage;
     }
@@ -47,7 +38,7 @@ public class MainActivity extends Activity {
 
         showTimeOutMessageToToast();
 
-       notifyTimeOut();
+        notifyTimeOut();
 
         this.finish();
     }
@@ -55,32 +46,6 @@ public class MainActivity extends Activity {
     private void notifyTimeOut() {
         NotificationController notification = new NotificationController(this);
         notification.notifyTimeOut();
-    }
-
-    private void setApplicationToPushNotification(NotificationCompat.Builder notificationBuilder) {
-        PendingIntent pending = PendingIntent.getActivity(this,
-                0,
-                new Intent(this, MainActivity.class),
-                0);
-        notificationBuilder.setContentIntent(pending);
-    }
-
-    private void setNotificationForever(NotificationCompat.Builder notificationBuilder) {
-        notificationBuilder.setOngoing(true);
-    }
-
-    private void setNotificationText(NotificationCompat.Builder notificationBuilder) {
-        notificationBuilder.setContentTitle("点灯時間");
-        notificationBuilder.setContentText(mTimeOutMessage);
-        notificationBuilder.setTicker(mTimeOutMessage);
-    }
-
-    private void setNotificationIcon(NotificationCompat.Builder notificationBuilder) {
-        if(mTimeOut.equals(MinTime)){
-            notificationBuilder.setSmallIcon(R.drawable.ic_stat_light_time_short);
-        }else{
-            notificationBuilder.setSmallIcon(R.drawable.ic_stat_light_time_long);
-        }
     }
 
     private void makeTimeOutMessage() {
