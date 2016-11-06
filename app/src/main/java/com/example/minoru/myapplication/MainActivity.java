@@ -27,6 +27,16 @@ public class MainActivity extends Activity {
     private Integer mTimeOut = MinTime;
     private StringBuilder mTimeOutMessage = new StringBuilder();
 
+    public boolean isMinimumTimeOut(){
+        return mTimeOut.equals(MinTime);
+    }
+    public Integer getTimeOut(){
+        return mTimeOut;
+    }
+    public StringBuilder getTimeoutMessage(){
+        return mTimeOutMessage;
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -37,24 +47,14 @@ public class MainActivity extends Activity {
 
         showTimeOutMessageToToast();
 
-        notifyTimeOut();
+       notifyTimeOut();
 
         this.finish();
     }
 
     private void notifyTimeOut() {
-        NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(this);
-
-        setNotificationIcon(notificationBuilder);
-        setNotificationText(notificationBuilder);
-
-        setNotificationForever(notificationBuilder);
-
-        setApplicationToPushNotification(notificationBuilder);
-
-        NotificationManager notificationManager =
-                (NotificationManager)getSystemService(getApplicationContext().NOTIFICATION_SERVICE);
-        notificationManager.notify(1, notificationBuilder.build());
+        NotificationController notification = new NotificationController(this);
+        notification.notifyTimeOut();
     }
 
     private void setApplicationToPushNotification(NotificationCompat.Builder notificationBuilder) {
