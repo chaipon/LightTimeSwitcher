@@ -21,8 +21,6 @@ out/
 .gradle/
 build/
 
-wrapper/
-caches/
 
 # Local configuration file (sdk path, etc)
 local.properties
@@ -90,3 +88,7 @@ lint/tmp/
 # Android Profiling
 *.hprof
 
+/wrapper/
+/caches/
+/native/
+/daemon/
