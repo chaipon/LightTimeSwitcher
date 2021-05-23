@@ -6,10 +6,7 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Intent;
 import android.os.Build;
-import android.support.v4.app.NotificationCompat;
-import android.util.Log;
-
-import static android.provider.Settings.System.getString;
+import androidx.core.app.NotificationCompat;
 
 /**
  * Created by Minoru on 2016/11/06.
