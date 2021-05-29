@@ -13,25 +13,11 @@
         android:textAppearance="@style/TextAppearance.AppCompat.Body1" />
 
     <TextView
-        android:id="@+id/FirstStep"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_margin="@dimen/activity_vertical_margin"
-        android:text="@string/FirstStepToSetSystemSetteings" />
-
-    <TextView
         android:id="@+id/SecondStep"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_margin="@dimen/activity_vertical_margin"
         android:text="@string/SecondStepToSetSystemSettings" />
-
-    <TextView
-        android:id="@+id/textView3"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_margin="@dimen/activity_vertical_margin"
-        android:text="@string/ThirdStepToSetSystemSettings" />
 
     <TextView
         android:id="@+id/textView4"

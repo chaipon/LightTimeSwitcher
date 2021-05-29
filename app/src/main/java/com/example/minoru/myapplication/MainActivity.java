@@ -1,36 +1,25 @@
 package com.example.minoru.myapplication;
 
-import android.Manifest;
-import android.app.Activity;
 import android.content.ContentResolver;
 import android.content.Intent;
-import android.content.pm.PackageManager;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.util.Log;
 import android.view.View;
 
-import androidx.activity.ComponentActivity;
-import androidx.activity.result.ActivityResult;
-import androidx.activity.result.ActivityResultCallback;
 import androidx.activity.result.ActivityResultLauncher;
-import androidx.activity.result.contract.ActivityResultContract;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.arch.core.util.Function;
-import androidx.core.app.ActivityCompat;
-
-import kotlin.Unit;
 
 import static android.provider.Settings.*;
 import static android.widget.Toast.*;
-import static androidx.activity.result.ActivityResultCallerKt.registerForActivityResult;
 
+@RequiresApi(api = Build.VERSION_CODES.M)
 public class MainActivity extends AppCompatActivity {
 
-    private static final int PERMISSION_WRITE_SETTINGS = 1;
     /**
      * ATTENTION: This was auto-generated to implement the App Indexing API.
      * See https://g.co/AppIndexing/AndroidStudio for more information.
@@ -47,6 +36,12 @@ public class MainActivity extends AppCompatActivity {
 
         return mTimeOutMessage;
     }
+    ActivityResultLauncher mStartLauncher = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result ->{
+        if(Settings.System.canWrite(getApplicationContext()))
+            execBody();
+        else
+            showExplainToSetSystemSettings();
+    });
 
     @RequiresApi(api = Build.VERSION_CODES.M)
     @Override
@@ -63,6 +58,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void showExplainToSetSystemSettings() {
         makeText(getApplicationContext(), "Please set system permission.", LENGTH_SHORT).show();
+        this.finish();
     }
 
     private void execBody() {
@@ -106,7 +102,7 @@ public class MainActivity extends AppCompatActivity {
 
     public void goToSystemSettings(View view) {
         Intent permissionIntent = new Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS);
-        startActivity(permissionIntent);
-        this.finish();
+        permissionIntent.setData(Uri.parse("package:" + getApplicationContext().getPackageName()));
+        mStartLauncher.launch(permissionIntent);
     }
 }

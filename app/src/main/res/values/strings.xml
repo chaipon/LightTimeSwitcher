@@ -18,10 +18,10 @@
 
     <string name="action_share">Share</string>
     <string name="action_reply">Reply</string>
-    <string name="explainToSetSystemPermission">次の画面で \"Light Time Switcher\" の Modify system settings を allow に設定してください。</string>
+    <string name="explainToSetSystemPermission">バックライトの点灯時間を変更するために\n次の画面で \"Light Time Switcher\" の Modify system settings を allow に設定してください。</string>
     <string name="go_systempermission">OK</string>
     <string name="FirstStepToSetSystemSetteings">(1) \"Light Time Switcher\" をクリックする</string>
-    <string name="SecondStepToSetSystemSettings">(2) \"Allow modifying system settings\" の 右にあるスイッチをONにする</string>
-    <string name="ThirdStepToSetSystemSettings">(3) 左上にある \"←\" をクリックしてもどる</string>
-    <string name="FourthStepToSetSystemSettings">(4) もどるボタンでホーム画面にもどる</string>
+    <string name="SecondStepToSetSystemSettings">(1) \"Allow modifying system settings\" の 右にあるスイッチをONにする</string>
+    <string name="ThirdStepToSetSystemSettings">(2) 左上にある \"←\" をクリックしてもどる</string>
+    <string name="FourthStepToSetSystemSettings">(2) もどるボタンでホーム画面にもどる</string>
 </resources>
