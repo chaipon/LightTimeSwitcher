@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical">
+
+    <TextView
+        android:id="@+id/explainToSetSystemSettings"
+        android:layout_width="wrap_content"
+        android:layout_height="72dp"
+        android:background="@color/cardview_dark_background"
+        android:text="@string/explainToSetSystemPermission"
+        android:textAppearance="@style/TextAppearance.AppCompat.Body1" />
+
+    <TextView
+        android:id="@+id/FirstStep"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="@dimen/activity_vertical_margin"
+        android:text="@string/FirstStepToSetSystemSetteings" />
+
+    <TextView
+        android:id="@+id/SecondStep"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="@dimen/activity_vertical_margin"
+        android:text="@string/SecondStepToSetSystemSettings" />
+
+    <TextView
+        android:id="@+id/textView3"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="@dimen/activity_vertical_margin"
+        android:text="@string/ThirdStepToSetSystemSettings" />
+
+    <TextView
+        android:id="@+id/textView4"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="@dimen/activity_vertical_margin"
+        android:text="@string/FourthStepToSetSystemSettings" />
+
+    <Button
+        android:id="@+id/explain_ssystem_permission"
+        android:layout_width="match_parent"
+        android:layout_height="71dp"
+        android:layout_margin="@dimen/activity_vertical_margin"
+        android:layout_weight="1"
+        android:background="@android:color/darker_gray"
+        android:onClick="goToSystemSettings"
+        android:text="@android:string/ok" />
+
+</LinearLayout>

@@ -9,6 +9,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.util.Log;
+import android.view.View;
 
 import androidx.activity.ComponentActivity;
 import androidx.activity.result.ActivityResult;
@@ -39,20 +40,6 @@ public class MainActivity extends AppCompatActivity {
     final Integer MaxTime = 30 * 60 * 1000;
     private Integer mTimeOut = MinTime;
     private StringBuilder mTimeOutMessage = new StringBuilder();
-    // Register the permissions callback, which handles the user's response to the
-    // system permissions dialog. Save the return value, an instance of
-    // ActivityResultLauncher, as an instance variable.
-    private ActivityResultLauncher<String> _requestPermissionLauncher =
-            registerForActivityResult(new ActivityResultContracts.RequestPermission(), isGranted -> {
-                if (isGranted) {
-                    execBody();
-                } else {
-                    showExplainToSetSystemSettings();
-                }
-            });
-
-
-
     public boolean isMinimumTimeOut(){
         return mTimeOut.equals(MinTime);
     }
@@ -69,9 +56,7 @@ public class MainActivity extends AppCompatActivity {
         if(Settings.System.canWrite(getApplicationContext()))
             execBody();
         else {
-            Intent permissionIntent = new Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS);
-            startActivity(permissionIntent);
-            this.finish();
+            setContentView(R.layout.explain_to_setting_system_permissions);
         }
 
     }
@@ -117,5 +102,11 @@ public class MainActivity extends AppCompatActivity {
             mTimeOut = MinTime;
         }
         Settings.System.putInt(cr, Settings.System.SCREEN_OFF_TIMEOUT, mTimeOut);
+    }
+
+    public void goToSystemSettings(View view) {
+        Intent permissionIntent = new Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS);
+        startActivity(permissionIntent);
+        this.finish();
     }
 }
