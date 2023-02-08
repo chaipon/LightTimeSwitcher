@@ -6,12 +6,15 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Intent;
 import android.os.Build;
+
+import androidx.annotation.RequiresApi;
 import androidx.core.app.NotificationCompat;
 
 /**
  * Created by Minoru on 2016/11/06.
  */
 
+@RequiresApi(api = Build.VERSION_CODES.M)
 public class NotificationController {
     private static final String CHANNEL_ID = "LightSwitcherNotification";
     MainActivity mMainActivity;

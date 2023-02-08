@@ -3,6 +3,14 @@ plugins {
 }
 
 android {
+    signingConfigs {
+        release {
+        storeFile file('C:\\Users\\mekun\\repos\\LightTimeSwitcher\\LightTimerSwitcher.jks')
+            storePassword ''
+            keyAlias 'key0'
+            keyPassword ''
+        }
+    }
     compileSdkVersion 30
     buildToolsVersion '30.0.3'
 
