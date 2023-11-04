@@ -51,6 +51,7 @@ public class MainActivity extends AppCompatActivity {
         if(Settings.System.canWrite(getApplicationContext()))
             execBody();
         else {
+            setTheme(R.style.Base_Theme_AppCompat);
             setContentView(R.layout.explain_to_setting_system_permissions);
         }
 
