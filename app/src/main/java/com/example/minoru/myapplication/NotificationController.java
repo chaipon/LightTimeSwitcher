@@ -29,7 +29,7 @@ public class NotificationController {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             CharSequence name = "LS";
             String description = "LS";
-            int importance = NotificationManager.IMPORTANCE_DEFAULT;
+            int importance = NotificationManager.IMPORTANCE_LOW;
             NotificationChannel channel = new NotificationChannel(CHANNEL_ID, name, importance);
             channel.setDescription(description);
             // Register the channel with the system; you can't change the importance
@@ -44,6 +44,7 @@ public class NotificationController {
         NotificationManager notificationManager = createNotificationChannel();
         NotificationCompat.Builder notificationBuilder =
                 new NotificationCompat.Builder(mMainActivity, CHANNEL_ID);
+        notificationBuilder.setCategory(NotificationCompat.CATEGORY_MESSAGE);
         setNotificationIcon(notificationBuilder);
         setNotificationText(notificationBuilder);
 
@@ -58,7 +59,7 @@ public class NotificationController {
         PendingIntent pending = PendingIntent.getActivity(mMainActivity,
                 0,
                 new Intent(mMainActivity, MainActivity.class),
-                0);
+                PendingIntent.FLAG_IMMUTABLE);
         notificationBuilder.setContentIntent(pending);
     }
     private void setNotificationForever(NotificationCompat.Builder notificationBuilder) {
