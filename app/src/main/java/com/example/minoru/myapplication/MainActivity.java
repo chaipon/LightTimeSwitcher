@@ -1,6 +1,8 @@
 package com.example.minoru.myapplication;
 
+import android.Manifest;
 import android.content.ContentResolver;
+import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Build;
@@ -36,12 +38,25 @@ public class MainActivity extends AppCompatActivity {
 
         return mTimeOutMessage;
     }
+    ActivityResultLauncher mRequestPermissionLauncher = registerForActivityResult(new ActivityResultContracts.RequestPermission(), isGranted ->{
+        execBody();
+    });
     ActivityResultLauncher mStartLauncher = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result ->{
         if(Settings.System.canWrite(getApplicationContext()))
-            execBody();
+            mRequestPermissionLauncher.launch("android.permission.POST_NOTIFICATIONS");
         else
             showExplainToSetSystemSettings();
     });
+
+    private Intent makeNotificationSettingIntent(Context context) {
+        Intent intent = new Intent();
+        intent.setAction(Settings.ACTION_APP_NOTIFICATION_SETTINGS);
+        intent.setPackage(context.getPackageName());
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            intent.setIdentifier(String.valueOf(context.getApplicationInfo().uid));
+        }
+        return intent;
+    }
 
     @RequiresApi(api = Build.VERSION_CODES.M)
     @Override
@@ -59,7 +74,6 @@ public class MainActivity extends AppCompatActivity {
 
     private void showExplainToSetSystemSettings() {
         makeText(getApplicationContext(), "Please set system permission.", LENGTH_SHORT).show();
-        this.finish();
     }
 
     private void execBody() {
@@ -67,12 +81,13 @@ public class MainActivity extends AppCompatActivity {
         makeTimeOutMessage();
         showTimeOutMessageToToast();
         notifyTimeOut();
-        this.finish();
     }
 
     private void notifyTimeOut() {
         NotificationController notification = new NotificationController(this);
-        notification.notifyTimeOut();
+        boolean isNotifyEnable = notification.notifyTimeOut();
+        if(isNotifyEnable)
+            this.finish();
     }
 
     private void makeTimeOutMessage() {

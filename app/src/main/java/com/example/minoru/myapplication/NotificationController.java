@@ -4,8 +4,10 @@ import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
+import android.content.Context;
 import android.content.Intent;
 import android.os.Build;
+import android.provider.Settings;
 
 import androidx.annotation.RequiresApi;
 import androidx.core.app.NotificationCompat;
@@ -32,6 +34,7 @@ public class NotificationController {
             int importance = NotificationManager.IMPORTANCE_LOW;
             NotificationChannel channel = new NotificationChannel(CHANNEL_ID, name, importance);
             channel.setDescription(description);
+            channel.setShowBadge(false);
             // Register the channel with the system; you can't change the importance
             // or other notification behaviors after this
             notificationManager.createNotificationChannel(channel);
@@ -40,7 +43,9 @@ public class NotificationController {
     }
 
 
-    public void notifyTimeOut() {
+
+
+    public boolean notifyTimeOut() {
         NotificationManager notificationManager = createNotificationChannel();
         NotificationCompat.Builder notificationBuilder =
                 new NotificationCompat.Builder(mMainActivity, CHANNEL_ID);
@@ -48,12 +53,18 @@ public class NotificationController {
         setNotificationIcon(notificationBuilder);
         setNotificationText(notificationBuilder);
 
+
         setNotificationForever(notificationBuilder);
 
         setApplicationToPushNotification(notificationBuilder);
 
         Notification notification = notificationBuilder.build();
+
         notificationManager.notify(1, notification);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            return notificationManager.areNotificationsEnabled();
+        }
+        return false;
     }
     private void setApplicationToPushNotification(NotificationCompat.Builder notificationBuilder) {
         PendingIntent pending = PendingIntent.getActivity(mMainActivity,
