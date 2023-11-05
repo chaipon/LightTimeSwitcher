@@ -81,13 +81,12 @@ public class MainActivity extends AppCompatActivity {
         makeTimeOutMessage();
         showTimeOutMessageToToast();
         notifyTimeOut();
+        this.finish();
     }
 
     private void notifyTimeOut() {
         NotificationController notification = new NotificationController(this);
-        boolean isNotifyEnable = notification.notifyTimeOut();
-        if(isNotifyEnable)
-            this.finish();
+        notification.notifyTimeOut();
     }
 
     private void makeTimeOutMessage() {

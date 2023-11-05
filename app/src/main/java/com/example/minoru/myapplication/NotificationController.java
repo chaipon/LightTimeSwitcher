@@ -45,7 +45,7 @@ public class NotificationController {
 
 
 
-    public boolean notifyTimeOut() {
+    public void notifyTimeOut() {
         NotificationManager notificationManager = createNotificationChannel();
         NotificationCompat.Builder notificationBuilder =
                 new NotificationCompat.Builder(mMainActivity, CHANNEL_ID);
@@ -61,10 +61,6 @@ public class NotificationController {
         Notification notification = notificationBuilder.build();
 
         notificationManager.notify(1, notification);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            return notificationManager.areNotificationsEnabled();
-        }
-        return false;
     }
     private void setApplicationToPushNotification(NotificationCompat.Builder notificationBuilder) {
         PendingIntent pending = PendingIntent.getActivity(mMainActivity,
