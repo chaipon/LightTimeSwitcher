@@ -31,4 +31,5 @@
     <string name="maximum_time">最大点灯時間(秒)</string>
     <string name="default_mimimum_sec">15</string>
     <string name="default_maximum_sec">1800</string>
+    <string name="settings_apply">設定</string>
 </resources>
