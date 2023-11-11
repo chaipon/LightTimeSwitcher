@@ -10,26 +10,9 @@
     <com.google.android.material.appbar.AppBarLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:theme="@style/Theme.AppCompat">
+        android:theme="@style/Theme.AppCompat"/>
 
-        <androidx.appcompat.widget.Toolbar
-            android:id="@+id/toolbar"
-            android:layout_width="match_parent"
-            android:layout_height="?attr/actionBarSize"
-            android:background="?attr/colorPrimary"
-            app:popupTheme="@style/AppTheme.PopupOverlay" />
-
-    </com.google.android.material.appbar.AppBarLayout>
-
-    <include layout="@layout/content_main" />
-
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/fab"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="bottom|end"
-        android:layout_margin="@dimen/fab_margin"
-        android:src="@android:drawable/ic_dialog_email" />
+    <include layout="@layout/activity_settings" />
 
     <TextView
         android:id="@+id/explainToSetSystemSettings"
@@ -39,11 +22,13 @@
         android:text="@string/explainToSetSystemPermission"
         android:textAppearance="@style/TextAppearance.AppCompat.Small" />
 
-    <Button
-        android:id="@+id/GoToModifySystemSettings"
-        android:layout_width="168dp"
+    <EditText
+        android:id="@+id/editTextTextPersonName"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="@string/go_systempermission"
-        android:onClick="goToSystemSettings"/>
+        android:ems="10"
+        android:inputType="textPersonName"
+        android:visibility="visible"
+        tools:visibility="visible" />
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
