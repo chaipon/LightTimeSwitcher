@@ -98,8 +98,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void makeTimeOutMessage() {
-        mTimeOutMessage.append(mTimeOut/1000);
-        mTimeOutMessage.append(getString(R.string.setting_message));
+        mTimeOutMessage.append(getString(R.string.setting_message, mTimeOut/1000));
     }
 
     private void showTimeOutMessageToToast() {

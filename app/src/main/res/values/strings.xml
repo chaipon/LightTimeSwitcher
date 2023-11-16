@@ -1,35 +1,26 @@
 <resources>
     <string name="app_name">Light Time Switcher</string>
     <string name="action_settings">Settings</string>
-    <string name="hoge">mekun</string>
-    <string name="setting_message">秒に設定しました。</string>
+    <string name="setting_message">I set it to %1$d seconds.</string>
 
     <string name="light_time_notification_title_template">Light time: %1$s</string>
 
-    <!-- TODO: remove this placeholder text -->
-    <string name="light_time_notification_placeholder_text_template">You said %1$s and lorem ipsum
-        dolor sit amet, consectetur adipiscing elit. Etiam non enim magna. Morbi dictum, velit vel
-        semper venenatis, magna odio volutpat velit, at ullamcorper nulla lacus sed turpis.
-        Pellentesque vitae metus elit, nec tincidunt tellus. Integer sed nisl sem, ullamcorper
-        ornare lacus. Duis ac mauris sed massa congue volutpat. Donec sed erat sit amet turpis
-        viverra rhoncus sit amet nec magna. Donec lacinia ligula at libero volutpat volutpat nec nec
-        tortor.
-    </string>
-
     <string name="action_share">Share</string>
     <string name="action_reply">Reply</string>
-    <string name="explainToSetSystemPermission">バックライトの点灯時間を変更するために\n次の画面で \"Light Time Switcher\" の Modify system settings を allow に設定してください。\nその後通知設定の許可ダイアログが表示されます。\nこれを許可すると画面上部の通知エリアに現在のバックライト点灯時間が表示されるようになります。</string>
+    <string name="explainToSetSystemPermission">To change the lighting time of the backlight,\non the next screen, set the Modify system settings of \\"Light Time Switcher\\" to allow. \nAfter that, a notification settings permission dialog will be displayed. \nIf you allow this, the current backlight lighting time will be displayed in the notification area at the top of the screen.</string>
     <string name="go_systempermission">OK</string>
-    <string name="FirstStepToSetSystemSetteings">(1) \"OK\" をクリックする</string>
-    <string name="SecondStepToSetSystemSettings">(1) \"Allow modifying system settings\" の 右にあるスイッチをONにする</string>
-    <string name="ThirdStepToSetSystemSettings">(2) 左上にある \"←\" をクリックしてもどる</string>
-    <string name="FourthStepToSetSystemSettings">(2) 左上にある \"←\" をクリックするか、もどるボタンでもどる</string>
-    <string name="LastStepToSetSystemSettings">(3) 通知許可ダイアログが表示されるので許可する</string>
+    <string name="FirstStepToSetSystemSetteings">(1) Click \\"OK\\"</string>
+    <string name="SecondStepToSetSystemSettings">(1) Turn on the switch to the right of \\"Allow modifying system settings\\"</string>
+    <string name="ThirdStepToSetSystemSettings">(2) Click \\"←\\" at the top left to return</string>
+    <string name="FourthStepToSetSystemSettings">(2) Click \\"←\\" at the top left or use the back button to return</string>
+    <string name="LastStepToSetSystemSettings">(3) A notification permission dialog will be displayed, so allow it.</string>
     <string name="app_settings_short_label">settings</string>
     <string name="app_settings_long_label">settings</string>
-    <string name="minimum_time">最小点灯時間(秒)</string>
-    <string name="maximum_time">最大点灯時間(秒)</string>
+    <string name="minimum_time">Minimum lighting time (seconds)</string>
+    <string name="maximum_time">Maximum lighting time (seconds)</string>
     <string name="default_mimimum_sec">15</string>
     <string name="default_maximum_sec">1800</string>
-    <string name="settings_apply">設定</string>
+    <string name="settings_apply">setting</string>
+    <string name="lighting_time">Lighting time</string>
+    <string name="set_mini_max">Minimum: %1$d seconds\nMaximum: %2$d seconds</string>
 </resources>

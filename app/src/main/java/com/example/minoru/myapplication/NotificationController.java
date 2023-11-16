@@ -1,5 +1,6 @@
 package com.example.minoru.myapplication;
 
+
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
@@ -74,7 +75,7 @@ public class NotificationController {
     }
 
     private void setNotificationText(NotificationCompat.Builder notificationBuilder) {
-        notificationBuilder.setContentTitle("点灯時間");
+        notificationBuilder.setContentTitle(mMainActivity.getString(R.string.lighting_time));
         notificationBuilder.setContentText(mMainActivity.getTimeoutMessage());
         notificationBuilder.setTicker(mMainActivity.getTimeoutMessage());
     }

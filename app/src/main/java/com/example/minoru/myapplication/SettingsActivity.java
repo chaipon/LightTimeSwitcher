@@ -13,6 +13,9 @@ import android.widget.EditText;
 import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.google.android.material.snackbar.BaseTransientBottomBar;
+import com.google.android.material.snackbar.Snackbar;
+
 public class SettingsActivity extends AppCompatActivity {
     public static final String MinimumKey = "minimumTime";
     public static final String MaximumKey = "maximumTime";
@@ -56,7 +59,7 @@ public class SettingsActivity extends AppCompatActivity {
             e.apply();
             Log.w("settings", "save minimum: " + minimum);
             Log.w("settings", "save maximum: " + maximum);
-            String message = "最小: " + minimum + "秒" + "\n最大: " + maximum + "秒に設定しました。";
+            String message = getString(R.string.set_mini_max, minimum, maximum);
             makeText(getApplicationContext(), message, LENGTH_SHORT).show();
         });
     }
