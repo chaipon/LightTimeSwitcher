@@ -57,8 +57,8 @@ public class SettingsActivity extends AppCompatActivity {
             e.putInt(MinimumKey, minimum);
             e.putInt(MaximumKey, maximum);
             e.apply();
-            Log.w("settings", "save minimum: " + minimum);
-            Log.w("settings", "save maximum: " + maximum);
+            Log.d("settings", "save minimum: " + minimum);
+            Log.d("settings", "save maximum: " + maximum);
             String message = getString(R.string.set_mini_max, minimum, maximum);
             makeText(getApplicationContext(), message, LENGTH_SHORT).show();
         });
