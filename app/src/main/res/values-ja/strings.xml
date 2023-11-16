@@ -8,9 +8,9 @@
 
     <string name="action_share">Share</string>
     <string name="action_reply">Reply</string>
-    <string name="explainToSetSystemPermission">バックライトの点灯時間を変更するために\n次の画面で \"Light Time Switcher\" の Modify system settings を allow に設定してください。\nその後通知設定の許可ダイアログが表示されます。\nこれを許可すると画面上部の通知エリアに現在のバックライト点灯時間が表示されるようになります。</string>
+    <string name="explainToSetSystemPermission">バックライトの点灯時間を変更するために\n次の画面で "Light Time Switcher" の Modify system settings を allow に設定してください。\nその後通知設定の許可ダイアログが表示されます。\nこれを許可すると画面上部の通知エリアに現在のバックライト点灯時間が表示されるようになります。</string>
     <string name="go_systempermission">OK</string>
-    <string name="FirstStepToSetSystemSetteings">(1) \"OK\" をクリックする</string>
+    <string name="FirstStepToSetSystemSetteings">(1) "OK" をクリックする</string>
     <string name="SecondStepToSetSystemSettings">(1) \"Allow modifying system settings\" の 右にあるスイッチをONにする</string>
     <string name="ThirdStepToSetSystemSettings">(2) 左上にある \"←\" をクリックしてもどる</string>
     <string name="FourthStepToSetSystemSettings">(2) 左上にある \"←\" をクリックするか、もどるボタンでもどる</string>
