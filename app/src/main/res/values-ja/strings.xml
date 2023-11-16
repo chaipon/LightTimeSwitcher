@@ -1,7 +1,7 @@
 <resources>
     <string name="app_name">Light Time Switcher</string>
     <string name="action_settings">Settings</string>
-    <string name="setting_message">%1$d秒に設定しました。</string>
+    <string name="setting_message">%1$d秒に設定しました</string>
 
     <string name="light_time_notification_title_template">Light time: %1$s</string>
 
@@ -15,8 +15,8 @@
     <string name="ThirdStepToSetSystemSettings">(2) 左上にある \"←\" をクリックしてもどる</string>
     <string name="FourthStepToSetSystemSettings">(2) 左上にある \"←\" をクリックするか、もどるボタンでもどる</string>
     <string name="LastStepToSetSystemSettings">(3) 通知許可ダイアログが表示されるので許可する</string>
-    <string name="app_settings_short_label">settings</string>
-    <string name="app_settings_long_label">settings</string>
+    <string name="app_settings_short_label">設定</string>
+    <string name="app_settings_long_label">点灯時間設定</string>
     <string name="minimum_time">最小点灯時間(秒)</string>
     <string name="maximum_time">最大点灯時間(秒)</string>
     <string name="default_mimimum_sec">15</string>

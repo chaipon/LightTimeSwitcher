@@ -113,10 +113,10 @@ public class MainActivity extends AppCompatActivity {
             e.printStackTrace();
         }
         if(mTimeOut.equals(mMinTime)){
-            Log.w("timeOut", "set to max");
+            Log.d("timeOut", "set to max");
             mTimeOut = mMaxTime;
         }else{
-            Log.w("timeOut", "set to min ###################### ");
+            Log.d("timeOut", "set to min ###################### ");
             mTimeOut = mMinTime;
         }
         Settings.System.putInt(cr, Settings.System.SCREEN_OFF_TIMEOUT, mTimeOut);
