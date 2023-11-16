@@ -7,12 +7,12 @@
 
     <string name="action_share">Share</string>
     <string name="action_reply">Reply</string>
-    <string name="explainToSetSystemPermission">To change the lighting time of the backlight,\non the next screen, set the Modify system settings of \\"Light Time Switcher\\" to allow. \nAfter that, a notification settings permission dialog will be displayed. \nIf you allow this, the current backlight lighting time will be displayed in the notification area at the top of the screen.</string>
+    <string name="explainToSetSystemPermission">To change the lighting time of the backlight,\non the next screen, set the Modify system settings of "Light Time Switcher" to allow. \nAfter that, a notification settings permission dialog will be displayed. \nIf you allow this, the current backlight lighting time will be displayed in the notification area at the top of the screen.</string>
     <string name="go_systempermission">OK</string>
-    <string name="FirstStepToSetSystemSetteings">(1) Click \\"OK\\"</string>
-    <string name="SecondStepToSetSystemSettings">(1) Turn on the switch to the right of \\"Allow modifying system settings\\"</string>
-    <string name="ThirdStepToSetSystemSettings">(2) Click \\"←\\" at the top left to return</string>
-    <string name="FourthStepToSetSystemSettings">(2) Click \\"←\\" at the top left or use the back button to return</string>
+    <string name="FirstStepToSetSystemSetteings">(1) Click "OK"</string>
+    <string name="SecondStepToSetSystemSettings">(1) Turn on the switch to the right of \"Allow modifying system settings\".</string>
+    <string name="ThirdStepToSetSystemSettings">(2) Click \"←\" at the top left to return.</string>
+    <string name="FourthStepToSetSystemSettings">(2) Click \"←\" at the top left or use the back button to return.</string>
     <string name="LastStepToSetSystemSettings">(3) A notification permission dialog will be displayed, so allow it.</string>
     <string name="app_settings_short_label">Settings</string>
     <string name="app_settings_long_label">Lighting time settings</string>
