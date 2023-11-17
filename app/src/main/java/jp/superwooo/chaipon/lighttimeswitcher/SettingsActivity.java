@@ -1,4 +1,4 @@
-package com.example.minoru.myapplication;
+package jp.superwooo.chaipon.lighttimeswitcher;
 
 import static android.widget.Toast.LENGTH_SHORT;
 import static android.widget.Toast.makeText;
@@ -13,8 +13,7 @@ import android.widget.EditText;
 import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.google.android.material.snackbar.BaseTransientBottomBar;
-import com.google.android.material.snackbar.Snackbar;
+import com.example.minoru.myapplication.R;
 
 public class SettingsActivity extends AppCompatActivity {
     public static final String MinimumKey = "minimumTime";
