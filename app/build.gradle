@@ -13,7 +13,7 @@ android {
     buildToolsVersion '30.0.3'
 
     defaultConfig {
-        applicationId "com.example.minoru.myapplication"
+        applicationId "jp.superwooo.chaipon.lighttimeswitcher"
         minSdkVersion 21
         targetSdkVersion 33
         versionCode 1

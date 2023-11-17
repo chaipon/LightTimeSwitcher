@@ -7,8 +7,8 @@
         android:shortcutLongLabel="@string/app_settings_long_label">
         <intent
             android:action="android.intent.action.VIEW"
-            android:targetPackage="com.example.minoru.myapplication"
-            android:targetClass="com.example.minoru.myapplication.SettingsActivity"
+            android:targetPackage="jp.superwooo.chaipon.lighttimeswitcher"
+            android:targetClass="jp.superwooo.chaipon.lighttimeswitcher.SettingsActivity"
             >
         </intent>
     </shortcut>
