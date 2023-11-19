@@ -31,7 +31,7 @@ public class SettingsActivity extends AppCompatActivity {
         LoadSettings();
 
         findViewById(R.id.applyButton).setOnClickListener(v -> {
-            EditText minimumText = findViewById(R.id.editMimimumTime);
+            EditText minimumText = findViewById(R.id.editMinimumTime);
             EditText maximumText = findViewById(R.id.editMaximumTime);
             int minimum = parseInt(minimumText.getText().toString());
             int maximum = parseInt(maximumText.getText().toString());
@@ -73,7 +73,7 @@ public class SettingsActivity extends AppCompatActivity {
     private void LoadSettings() {
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
 
-        EditText minimumText = findViewById(R.id.editMimimumTime);
+        EditText minimumText = findViewById(R.id.editMinimumTime);
         EditText maximumText = findViewById(R.id.editMaximumTime);
         int minimum = 0;
         int maximum = 0;

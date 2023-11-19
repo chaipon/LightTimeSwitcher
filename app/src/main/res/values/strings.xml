@@ -18,7 +18,7 @@
     <string name="app_settings_long_label">Lighting time settings</string>
     <string name="minimum_time">Minimum lighting time (seconds)</string>
     <string name="maximum_time">Maximum lighting time (seconds)</string>
-    <string name="default_mimimum_sec">15</string>
+    <string name="default_minimum_sec">15</string>
     <string name="default_maximum_sec">1800</string>
     <string name="settings_apply">setting</string>
     <string name="lighting_time">Lighting time</string>
