@@ -11,7 +11,7 @@ import android.os.Build;
 import androidx.annotation.RequiresApi;
 import androidx.core.app.NotificationCompat;
 
-import com.example.minoru.myapplication.R;
+import jp.superwooo.chaipon.lighttimeswitcher.R;
 
 /**
  * Created by Minoru on 2016/11/06.

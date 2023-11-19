@@ -13,7 +13,7 @@ import android.widget.EditText;
 import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.example.minoru.myapplication.R;
+import jp.superwooo.chaipon.lighttimeswitcher.R;
 
 public class SettingsActivity extends AppCompatActivity {
     public static final String MinimumKey = "minimumTime";

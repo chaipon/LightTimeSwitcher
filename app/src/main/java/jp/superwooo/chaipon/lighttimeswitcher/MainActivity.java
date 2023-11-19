@@ -20,7 +20,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import static android.provider.Settings.*;
 import static android.widget.Toast.*;
 
-import com.example.minoru.myapplication.R;
+import jp.superwooo.chaipon.lighttimeswitcher.R;
 
 @RequiresApi(api = Build.VERSION_CODES.M)
 public class MainActivity extends AppCompatActivity {
