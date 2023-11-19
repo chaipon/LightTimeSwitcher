@@ -4,7 +4,7 @@
     "type": "APK",
     "kind": "Directory"
   },
-  "applicationId": "com.example.minoru.myapplication",
+  "applicationId": "jp.superwooo.chaipon.lighttimeswitcher",
   "variantName": "release",
   "elements": [
     {
