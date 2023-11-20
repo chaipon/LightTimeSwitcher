@@ -5,7 +5,6 @@
 
     <string name="light_time_notification_title_template">Light time: %1$s</string>
 
-
     <string name="action_share">Share</string>
     <string name="action_reply">Reply</string>
     <string name="explainToSetSystemPermission">バックライトの点灯時間を変更するために\n次の画面で "Light Time Switcher" の Modify system settings を allow に設定してください。\nその後通知設定の許可ダイアログが表示されます。\nこれを許可すると画面上部の通知エリアに現在のバックライト点灯時間が表示されるようになります。</string>
@@ -17,8 +16,8 @@
     <string name="LastStepToSetSystemSettings">(3) 通知許可ダイアログが表示されるので許可する</string>
     <string name="app_settings_short_label">設定</string>
     <string name="app_settings_long_label">点灯時間設定</string>
-    <string name="minimum_time">最小点灯時間(秒)</string>
-    <string name="maximum_time">最大点灯時間(秒)</string>
+    <string name="minimum_time">短い点灯時間（秒）</string>
+    <string name="maximum_time">長い点灯時間（秒）</string>
     <string name="default_minimum_sec">15</string>
     <string name="default_maximum_sec">1800</string>
     <string name="settings_apply">設定</string>
