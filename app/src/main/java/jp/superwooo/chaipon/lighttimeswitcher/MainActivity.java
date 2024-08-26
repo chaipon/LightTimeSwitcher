@@ -22,12 +22,11 @@ import static android.widget.Toast.*;
 
 import jp.superwooo.chaipon.lighttimeswitcher.R;
 
-@RequiresApi(api = Build.VERSION_CODES.M)
 public class MainActivity extends AppCompatActivity {
 
     /**
      * ATTENTION: This was auto-generated to implement the App Indexing API.
-     * See https://g.co/AppIndexing/AndroidStudio for more information.
+     * See <a href="https://g.co/AppIndexing/AndroidStudio">...</a> for more information.
      */
     //private GoogleApiClient client;
     public static final Integer MinTime = 15 * 1000;
@@ -74,7 +73,7 @@ public class MainActivity extends AppCompatActivity {
         if(Settings.System.canWrite(getApplicationContext()))
             execBody();
         else {
-            setTheme(R.style.Base_Theme_AppCompat);
+            setTheme(androidx.appcompat.R.style.Base_Theme_AppCompat);
             setContentView(R.layout.explain_to_setting_system_permissions);
         }
 
