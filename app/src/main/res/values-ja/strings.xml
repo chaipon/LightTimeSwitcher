@@ -16,8 +16,8 @@
     <string name="LastStepToSetSystemSettings">(3) 通知許可ダイアログが表示されるので許可する</string>
     <string name="app_settings_short_label">設定</string>
     <string name="app_settings_long_label">点灯時間設定</string>
-    <string name="minimum_time">短い点灯時間（秒）</string>
-    <string name="maximum_time">長い点灯時間（秒）</string>
+    <string name="minimum_time">短い点灯時間（秒）\n[最小: 10秒]</string>
+    <string name="maximum_time">長い点灯時間（秒）\n[最大: 86400秒(24時間)]</string>
     <string name="default_minimum_sec">15</string>
     <string name="default_maximum_sec">1800</string>
     <string name="settings_apply">設定</string>

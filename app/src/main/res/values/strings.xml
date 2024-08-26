@@ -16,8 +16,8 @@
     <string name="LastStepToSetSystemSettings">(3) A notification permission dialog will be displayed, so allow it.</string>
     <string name="app_settings_short_label">Settings</string>
     <string name="app_settings_long_label">Lighting time settings</string>
-    <string name="minimum_time">Short lighting time (seconds)</string>
-    <string name="maximum_time">Long lighting time (seconds)</string>
+    <string name="minimum_time">Short lighting time (seconds)\n[Minimum: 10 seconds]</string>
+    <string name="maximum_time">Long lighting time (seconds)\n[Maximum: 86400 seconds(24 hour)]</string>
     <string name="default_minimum_sec">15</string>
     <string name="default_maximum_sec">1800</string>
     <string name="settings_apply">setting</string>
