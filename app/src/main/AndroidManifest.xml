@@ -3,7 +3,6 @@
     package="jp.superwooo.chaipon.lighttimeswitcher">
 
     <uses-permission android:name="android.permission.WRITE_SETTINGS" />
-    <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <application
