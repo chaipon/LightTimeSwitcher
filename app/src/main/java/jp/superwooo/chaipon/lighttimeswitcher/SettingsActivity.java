@@ -33,24 +33,23 @@ public class SettingsActivity extends AppCompatActivity {
         findViewById(R.id.applyButton).setOnClickListener(v -> {
             EditText minimumText = findViewById(R.id.editMinimumTime);
             EditText maximumText = findViewById(R.id.editMaximumTime);
-            int minimum = parseInt(minimumText.getText().toString());
-            int maximum = parseInt(maximumText.getText().toString());
+            int minimum = parseInt(minimumText.getText().toString(), loadCurrentMinimum());
+            int maximum = parseInt(maximumText.getText().toString(), loadCurrentMaximum());
             if(minimum < SettingEnableMinimumTime) {
-                minimumText.setText(String.valueOf(SettingEnableMinimumTime));
                 minimum = SettingEnableMinimumTime;
             }
             if(minimum >= SettingEnableMaximumTime) {
-                minimumText.setText(String.valueOf(SettingEnableMaximumTime));
                 minimum = SettingEnableMaximumTime;
             }
             if(maximum < minimum) {
-                maximumText.setText(String.valueOf(minimum));
                 maximum = minimum;
             }
             if(maximum >= SettingEnableMaximumTime) {
-                maximumText.setText(String.valueOf(SettingEnableMaximumTime));
                 maximum = SettingEnableMaximumTime;
             }
+            minimumText.setText(String.valueOf(minimum));
+            maximumText.setText(String.valueOf(maximum));
+
             SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
             SharedPreferences.Editor e = preferences.edit();
             e.putInt(MinimumKey, minimum);
@@ -62,12 +61,22 @@ public class SettingsActivity extends AppCompatActivity {
             makeText(getApplicationContext(), message, LENGTH_SHORT).show();
         });
     }
-    private int parseInt(String inputText){
+     private int parseInt(String inputText, int defaultTime){
         try{
             return Integer.parseInt(inputText);
         }catch(Exception e){
-            return SettingEnableMaximumTime;
+            return defaultTime;
         }
+    }
+    private int loadCurrentMinimum(){
+        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
+        int min = preferences.getInt(MinimumKey, MainActivity.MinTime / 1000);
+        return min;
+    }
+    private int loadCurrentMaximum(){
+        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
+        int max = preferences.getInt(MaximumKey, MainActivity.MaxTime / 1000);
+        return max;
     }
 
     private void LoadSettings() {
@@ -75,12 +84,8 @@ public class SettingsActivity extends AppCompatActivity {
 
         EditText minimumText = findViewById(R.id.editMinimumTime);
         EditText maximumText = findViewById(R.id.editMaximumTime);
-        int minimum = 0;
-        int maximum = 0;
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
-            minimum = preferences.getInt(MinimumKey, MainActivity.MinTime / 1000);
-            maximum = preferences.getInt(MaximumKey, MainActivity.MaxTime / 1000);
-        }
+        int minimum = preferences.getInt(MinimumKey, MainActivity.MinTime / 1000);
+        int maximum = preferences.getInt(MaximumKey, MainActivity.MaxTime / 1000);
         minimumText.setText(String.valueOf(minimum));
         maximumText.setText(String.valueOf(maximum));
     }

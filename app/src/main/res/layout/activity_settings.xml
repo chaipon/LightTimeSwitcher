@@ -27,7 +27,7 @@
         android:layout_below="@id/settingMinimumExplain"
         android:ems="10"
         android:hint="@string/default_minimum_sec"
-        android:inputType="numberDecimal"
+        android:inputType= "numberSigned"
         android:labelFor="@id/settingMinimumExplain"
         android:importantForAutofill="no" />
 
@@ -45,7 +45,7 @@
         android:layout_below="@id/settingMaximumExplain"
         android:ems="10"
         android:hint="@string/default_maximum_sec"
-        android:inputType="numberDecimal"
+        android:inputType="numberSigned"
         android:labelFor="@id/settingMaximumExplain"
         android:importantForAutofill="no" />
 
