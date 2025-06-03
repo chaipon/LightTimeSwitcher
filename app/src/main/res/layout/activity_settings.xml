@@ -18,6 +18,7 @@
         android:id="@+id/settingMinimumExplain"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:textSize="22sp"
         android:text="@string/minimum_time" />
 
     <EditText
@@ -27,6 +28,7 @@
         android:layout_below="@id/settingMinimumExplain"
         android:ems="10"
         android:hint="@string/default_minimum_sec"
+        android:textSize="22sp"
         android:inputType= "numberSigned"
         android:labelFor="@id/settingMinimumExplain"
         android:importantForAutofill="no" />
@@ -35,6 +37,7 @@
         android:id="@+id/settingMaximumExplain"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:textSize="22sp"
         android:layout_below="@id/editMinimumTime"
         android:text="@string/maximum_time" />
 
@@ -44,6 +47,7 @@
         android:layout_height="wrap_content"
         android:layout_below="@id/settingMaximumExplain"
         android:ems="10"
+        android:textSize="22sp"
         android:hint="@string/default_maximum_sec"
         android:inputType="numberSigned"
         android:labelFor="@id/settingMaximumExplain"
@@ -52,6 +56,7 @@
     <Button
         android:id="@+id/applyButton"
         android:layout_width="wrap_content"
+        android:textSize="22sp"
         android:layout_height="wrap_content"
         android:layout_below="@id/editMaximumTime"
         android:text="@string/settings_apply" />
