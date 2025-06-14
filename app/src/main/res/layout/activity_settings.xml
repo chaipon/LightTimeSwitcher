@@ -1,10 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout
+<LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:orientation="vertical"
     android:paddingLeft="@dimen/activity_horizontal_margin"
     android:paddingRight="@dimen/activity_horizontal_margin"
     android:paddingTop="@dimen/activity_vertical_margin"
@@ -18,7 +19,7 @@
         android:id="@+id/settingMinimumExplain"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:textSize="22sp"
+        android:textSize="18sp"
         android:text="@string/minimum_time" />
 
     <EditText
@@ -28,7 +29,7 @@
         android:layout_below="@id/settingMinimumExplain"
         android:ems="10"
         android:hint="@string/default_minimum_sec"
-        android:textSize="22sp"
+        android:textSize="18sp"
         android:inputType= "numberSigned"
         android:labelFor="@id/settingMinimumExplain"
         android:importantForAutofill="no" />
@@ -37,17 +38,15 @@
         android:id="@+id/settingMaximumExplain"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:textSize="22sp"
-        android:layout_below="@id/editMinimumTime"
+        android:textSize="18sp"
         android:text="@string/maximum_time" />
 
     <EditText
         android:id="@+id/editMaximumTime"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_below="@id/settingMaximumExplain"
         android:ems="10"
-        android:textSize="22sp"
+        android:textSize="18sp"
         android:hint="@string/default_maximum_sec"
         android:inputType="numberSigned"
         android:labelFor="@id/settingMaximumExplain"
@@ -56,8 +55,35 @@
     <Button
         android:id="@+id/applyButton"
         android:layout_width="wrap_content"
-        android:textSize="22sp"
         android:layout_height="wrap_content"
-        android:layout_below="@id/editMaximumTime"
-        android:text="@string/settings_apply" />
-</RelativeLayout>
+        android:text="@string/settings_apply"
+        android:textSize="18sp" />
+
+
+    <CheckBox
+        android:id="@+id/checkbox_enable_time_to_set_short"
+        android:layout_marginTop="50sp"
+        android:layout_width="wrap_content"
+        android:layout_height="50sp"
+        android:textSize="18sp"
+        android:text="@string/explain_enable_time_to_set_short_time"/>
+    <TimePicker
+        android:id="@+id/set_short_at"
+        android:timePickerMode="spinner"
+        android:layout_width="400sp"
+        android:layout_height="150sp"/>
+
+    <CheckBox
+        android:id="@+id/checkbox_enable_time_to_set_long"
+        android:layout_width="wrap_content"
+        android:layout_height="50sp"
+        android:textSize="18sp"
+        android:text="@string/explain_enable_time_to_set_long_time"/>
+    <TimePicker
+        android:id="@+id/set_long_at"
+        android:timePickerMode="spinner"
+        android:layout_width="400sp"
+        android:layout_height="150sp"/>
+
+
+</LinearLayout>

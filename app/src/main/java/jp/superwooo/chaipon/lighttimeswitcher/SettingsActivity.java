@@ -9,6 +9,7 @@ import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.util.Log;
 import android.widget.EditText;
+import android.widget.TimePicker;
 
 import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
@@ -60,6 +61,13 @@ public class SettingsActivity extends AppCompatActivity {
             String message = getString(R.string.set_mini_max, minimum, maximum);
             makeText(getApplicationContext(), message, LENGTH_SHORT).show();
         });
+        //AlarmManager alarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
+        //Intent intent = new Intent(this, MyBroadcastReceiver.class);
+        //PendingIntent pendingIntent = PendingIntent.getBroadcast(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
+
+        //long triggerTime = System.currentTimeMillis() + 5000; // 1分後に発動
+        //alarmManager.setExact(AlarmManager.RTC_WAKEUP, triggerTime, pendingIntent);
+
     }
      private int parseInt(String inputText, int defaultTime){
         try{
