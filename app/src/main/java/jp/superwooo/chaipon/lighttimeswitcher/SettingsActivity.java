@@ -19,8 +19,9 @@ import jp.superwooo.chaipon.lighttimeswitcher.R;
 public class SettingsActivity extends AppCompatActivity {
     public static final String MinimumKey = "minimumTime";
     public static final String MaximumKey = "maximumTime";
-    final int SettingEnableMinimumTime = 10;
-    final int SettingEnableMaximumTime = 3600 * 24;
+    static final int SettingEnableMinimumTime = 10;
+    static final int SettingEnableMaximumTime = 3600 * 24;
+    public static final LimitTime limitTime = new LimitTime(SettingEnableMinimumTime, SettingEnableMaximumTime);
 
     @RequiresApi(api = Build.VERSION_CODES.M)
     @Override
@@ -34,25 +35,17 @@ public class SettingsActivity extends AppCompatActivity {
         findViewById(R.id.applyButton).setOnClickListener(v -> {
             EditText minimumText = findViewById(R.id.editMinimumTime);
             EditText maximumText = findViewById(R.id.editMaximumTime);
-            int minimum = parseInt(minimumText.getText().toString(), loadCurrentMinimum());
-            int maximum = parseInt(maximumText.getText().toString(), loadCurrentMaximum());
-            if(minimum < SettingEnableMinimumTime) {
-                minimum = SettingEnableMinimumTime;
-            }
-            if(minimum >= SettingEnableMaximumTime) {
-                minimum = SettingEnableMaximumTime;
-            }
-            if(maximum < minimum) {
-                maximum = minimum;
-            }
-            if(maximum >= SettingEnableMaximumTime) {
-                maximum = SettingEnableMaximumTime;
-            }
-            minimumText.setText(String.valueOf(minimum));
-            maximumText.setText(String.valueOf(maximum));
+            LimitTime limit = new LimitTime(SettingEnableMinimumTime, SettingEnableMaximumTime);
+            int shortDuration = parseInt(minimumText.getText().toString(), loadCurrentMinimum());
+            int longDuration = parseInt(maximumText.getText().toString(), loadCurrentMaximum());
+            ShortLongTimes shortLongTimes = new ShortLongTimes(shortDuration, longDuration, limit);
+            minimumText.setText(String.valueOf(shortLongTimes.getShortDuration().sec()));
+            maximumText.setText(String.valueOf(shortLongTimes.getLongDuration().sec()));
 
             SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
             SharedPreferences.Editor e = preferences.edit();
+            int minimum = shortLongTimes.getShortDuration().sec();
+            int maximum = shortLongTimes.getLongDuration().sec();
             e.putInt(MinimumKey, minimum);
             e.putInt(MaximumKey, maximum);
             e.apply();
@@ -61,13 +54,6 @@ public class SettingsActivity extends AppCompatActivity {
             String message = getString(R.string.set_mini_max, minimum, maximum);
             makeText(getApplicationContext(), message, LENGTH_SHORT).show();
         });
-        //AlarmManager alarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
-        //Intent intent = new Intent(this, MyBroadcastReceiver.class);
-        //PendingIntent pendingIntent = PendingIntent.getBroadcast(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
-
-        //long triggerTime = System.currentTimeMillis() + 5000; // 1分後に発動
-        //alarmManager.setExact(AlarmManager.RTC_WAKEUP, triggerTime, pendingIntent);
-
     }
      private int parseInt(String inputText, int defaultTime){
         try{

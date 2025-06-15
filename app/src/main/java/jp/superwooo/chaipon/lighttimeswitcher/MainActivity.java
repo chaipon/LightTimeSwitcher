@@ -7,7 +7,7 @@ import android.content.SharedPreferences;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
-import android.preference.PreferenceManager;
+import androidx.preference.PreferenceManager;
 import android.provider.Settings;
 import android.util.Log;
 import android.view.View;
@@ -29,12 +29,11 @@ public class MainActivity extends AppCompatActivity {
     //private GoogleApiClient client;
     public static final Integer MinTime = 15 * 1000;
     public static final Integer MaxTime = 30 * 60 * 1000;
-    Integer _minTime = MinTime;
-    Integer _maxTime = MaxTime;
-    private Integer _timeOut = _minTime;
+    ShortLongTimes _shortLongTimes;
+    private TimeDurationValue _timeOutDuration;
     private StringBuilder _timeOutMessage = new StringBuilder();
     public boolean isMinimumTimeOut(){
-        return _timeOut.equals(_minTime);
+        return _timeOutDuration.equals(_shortLongTimes.getShortDuration());
     }
     public StringBuilder getTimeoutMessage(){
 
@@ -65,8 +64,9 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
-        _minTime = preferences.getInt(SettingsActivity.MinimumKey, MinTime / 1000) * 1000;
-        _maxTime = preferences.getInt(SettingsActivity.MaximumKey, MaxTime / 1000) * 1000;
+        int shortSec = preferences.getInt(SettingsActivity.MinimumKey, MinTime / 1000);
+        int longSec = preferences.getInt(SettingsActivity.MaximumKey, MaxTime / 1000);
+        _shortLongTimes = new ShortLongTimes(shortSec, longSec, SettingsActivity.limitTime);
 
         if(Settings.System.canWrite(getApplicationContext()))
             execBody();
@@ -95,7 +95,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void makeTimeOutMessage() {
-        _timeOutMessage.append(getString(R.string.setting_message, _timeOut /1000));
+        _timeOutMessage.append(getString(R.string.setting_message, _timeOutDuration.sec()));
     }
 
     private void showTimeOutMessageToToast() {
@@ -105,18 +105,19 @@ public class MainActivity extends AppCompatActivity {
     private void switchTimeOut() {
         ContentResolver cr = getContentResolver();
         try {
-            _timeOut = Settings.System.getInt(cr, Settings.System.SCREEN_OFF_TIMEOUT);
+            int timeOut = Settings.System.getInt(cr, Settings.System.SCREEN_OFF_TIMEOUT) / 1000;
+            _timeOutDuration = new TimeDurationValue(timeOut, SettingsActivity.limitTime);
         } catch (SettingNotFoundException e) {
             e.printStackTrace();
         }
-        if(_timeOut.equals(_minTime)){
+        if(_timeOutDuration.equals(_shortLongTimes.getShortDuration())){
             Log.d("timeOut", "set to max");
-            _timeOut = _maxTime;
+            _timeOutDuration = _shortLongTimes.getLongDuration();
         }else{
             Log.d("timeOut", "set to min ###################### ");
-            _timeOut = _minTime;
+            _timeOutDuration = _shortLongTimes.getShortDuration();
         }
-        Settings.System.putInt(cr, Settings.System.SCREEN_OFF_TIMEOUT, _timeOut);
+        Settings.System.putInt(cr, Settings.System.SCREEN_OFF_TIMEOUT, _timeOutDuration.milliSecond());
     }
 
     public void goToSystemSettings(View view) {
