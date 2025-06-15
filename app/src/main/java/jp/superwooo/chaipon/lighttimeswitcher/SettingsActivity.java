@@ -6,7 +6,7 @@ import static android.widget.Toast.makeText;
 import android.content.SharedPreferences;
 import android.os.Build;
 import android.os.Bundle;
-import android.preference.PreferenceManager;
+import androidx.preference.PreferenceManager;
 import android.util.Log;
 import android.widget.EditText;
 import android.widget.TimePicker;
