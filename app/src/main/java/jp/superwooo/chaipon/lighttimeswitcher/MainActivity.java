@@ -20,8 +20,6 @@ import androidx.appcompat.app.AppCompatActivity;
 import static android.provider.Settings.*;
 import static android.widget.Toast.*;
 
-import jp.superwooo.chaipon.lighttimeswitcher.R;
-
 public class MainActivity extends AppCompatActivity {
 
     /**
@@ -31,23 +29,23 @@ public class MainActivity extends AppCompatActivity {
     //private GoogleApiClient client;
     public static final Integer MinTime = 15 * 1000;
     public static final Integer MaxTime = 30 * 60 * 1000;
-    Integer mMinTime = MinTime;
-    Integer mMaxTime = MaxTime;
-    private Integer mTimeOut = mMinTime;
-    private StringBuilder mTimeOutMessage = new StringBuilder();
+    Integer _minTime = MinTime;
+    Integer _maxTime = MaxTime;
+    private Integer _timeOut = _minTime;
+    private StringBuilder _timeOutMessage = new StringBuilder();
     public boolean isMinimumTimeOut(){
-        return mTimeOut.equals(mMinTime);
+        return _timeOut.equals(_minTime);
     }
     public StringBuilder getTimeoutMessage(){
 
-        return mTimeOutMessage;
+        return _timeOutMessage;
     }
-    ActivityResultLauncher mRequestPermissionLauncher = registerForActivityResult(new ActivityResultContracts.RequestPermission(), isGranted ->{
+    ActivityResultLauncher _requestPermissionLauncher = registerForActivityResult(new ActivityResultContracts.RequestPermission(), isGranted ->{
         execBody();
     });
-    ActivityResultLauncher mStartLauncher = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result ->{
+    ActivityResultLauncher _startLauncher = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result ->{
         if(Settings.System.canWrite(getApplicationContext()))
-            mRequestPermissionLauncher.launch("android.permission.POST_NOTIFICATIONS");
+            _requestPermissionLauncher.launch("android.permission.POST_NOTIFICATIONS");
         else
             showExplainToSetSystemSettings();
     });
@@ -67,8 +65,8 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
-        mMinTime = preferences.getInt(SettingsActivity.MinimumKey, MinTime / 1000) * 1000;
-        mMaxTime = preferences.getInt(SettingsActivity.MaximumKey, MaxTime / 1000) * 1000;
+        _minTime = preferences.getInt(SettingsActivity.MinimumKey, MinTime / 1000) * 1000;
+        _maxTime = preferences.getInt(SettingsActivity.MaximumKey, MaxTime / 1000) * 1000;
 
         if(Settings.System.canWrite(getApplicationContext()))
             execBody();
@@ -97,33 +95,33 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void makeTimeOutMessage() {
-        mTimeOutMessage.append(getString(R.string.setting_message, mTimeOut/1000));
+        _timeOutMessage.append(getString(R.string.setting_message, _timeOut /1000));
     }
 
     private void showTimeOutMessageToToast() {
-        makeText(getApplicationContext(), mTimeOutMessage.toString(), LENGTH_SHORT).show();
+        makeText(getApplicationContext(), _timeOutMessage.toString(), LENGTH_SHORT).show();
     }
 
     private void switchTimeOut() {
         ContentResolver cr = getContentResolver();
         try {
-            mTimeOut = Settings.System.getInt(cr, Settings.System.SCREEN_OFF_TIMEOUT);
+            _timeOut = Settings.System.getInt(cr, Settings.System.SCREEN_OFF_TIMEOUT);
         } catch (SettingNotFoundException e) {
             e.printStackTrace();
         }
-        if(mTimeOut.equals(mMinTime)){
+        if(_timeOut.equals(_minTime)){
             Log.d("timeOut", "set to max");
-            mTimeOut = mMaxTime;
+            _timeOut = _maxTime;
         }else{
             Log.d("timeOut", "set to min ###################### ");
-            mTimeOut = mMinTime;
+            _timeOut = _minTime;
         }
-        Settings.System.putInt(cr, Settings.System.SCREEN_OFF_TIMEOUT, mTimeOut);
+        Settings.System.putInt(cr, Settings.System.SCREEN_OFF_TIMEOUT, _timeOut);
     }
 
     public void goToSystemSettings(View view) {
         Intent permissionIntent = new Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS);
         permissionIntent.setData(Uri.parse("package:" + getApplicationContext().getPackageName()));
-        mStartLauncher.launch(permissionIntent);
+        _startLauncher.launch(permissionIntent);
     }
 }

@@ -11,8 +11,6 @@ import android.os.Build;
 import androidx.annotation.RequiresApi;
 import androidx.core.app.NotificationCompat;
 
-import jp.superwooo.chaipon.lighttimeswitcher.R;
-
 /**
  * Created by Minoru on 2016/11/06.
  */
@@ -20,15 +18,15 @@ import jp.superwooo.chaipon.lighttimeswitcher.R;
 @RequiresApi(api = Build.VERSION_CODES.M)
 public class NotificationController {
     private static final String CHANNEL_ID = "LightSwitcherNotification";
-    MainActivity mMainActivity;
+    MainActivity _mainActivity;
     public NotificationController(MainActivity mainActivity) {
-        mMainActivity = mainActivity;
+        _mainActivity = mainActivity;
     }
     private NotificationManager createNotificationChannel() {
         // Create the NotificationChannel, but only on API 26+ because
         // the NotificationChannel class is new and not in the support library
         NotificationManager notificationManager =
-                (NotificationManager)mMainActivity.getSystemService(mMainActivity.getApplicationContext().NOTIFICATION_SERVICE);
+                (NotificationManager) _mainActivity.getSystemService(_mainActivity.getApplicationContext().NOTIFICATION_SERVICE);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             CharSequence name = "LS";
             String description = "LS";
@@ -49,7 +47,7 @@ public class NotificationController {
     public void notifyTimeOut() {
         NotificationManager notificationManager = createNotificationChannel();
         NotificationCompat.Builder notificationBuilder =
-                new NotificationCompat.Builder(mMainActivity, CHANNEL_ID);
+                new NotificationCompat.Builder(_mainActivity, CHANNEL_ID);
         notificationBuilder.setCategory(NotificationCompat.CATEGORY_MESSAGE);
         setNotificationIcon(notificationBuilder);
         setNotificationText(notificationBuilder);
@@ -64,9 +62,9 @@ public class NotificationController {
         notificationManager.notify(1, notification);
     }
     private void setApplicationToPushNotification(NotificationCompat.Builder notificationBuilder) {
-        PendingIntent pending = PendingIntent.getActivity(mMainActivity,
+        PendingIntent pending = PendingIntent.getActivity(_mainActivity,
                 0,
-                new Intent(mMainActivity, MainActivity.class),
+                new Intent(_mainActivity, MainActivity.class),
                 PendingIntent.FLAG_IMMUTABLE);
         notificationBuilder.setContentIntent(pending);
     }
@@ -75,13 +73,13 @@ public class NotificationController {
     }
 
     private void setNotificationText(NotificationCompat.Builder notificationBuilder) {
-        notificationBuilder.setContentTitle(mMainActivity.getString(R.string.lighting_time));
-        notificationBuilder.setContentText(mMainActivity.getTimeoutMessage());
-        notificationBuilder.setTicker(mMainActivity.getTimeoutMessage());
+        notificationBuilder.setContentTitle(_mainActivity.getString(R.string.lighting_time));
+        notificationBuilder.setContentText(_mainActivity.getTimeoutMessage());
+        notificationBuilder.setTicker(_mainActivity.getTimeoutMessage());
     }
 
     private void setNotificationIcon(NotificationCompat.Builder notificationBuilder) {
-        if(mMainActivity.isMinimumTimeOut()){
+        if(_mainActivity.isMinimumTimeOut()){
             notificationBuilder.setSmallIcon(R.drawable.ic_stat_light_time_short);
         }else{
             notificationBuilder.setSmallIcon(R.drawable.ic_stat_light_time_long);
