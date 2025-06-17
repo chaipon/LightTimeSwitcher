@@ -7,6 +7,7 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Intent;
 import android.os.Build;
+import android.util.Log;
 
 import androidx.annotation.RequiresApi;
 import androidx.core.app.NotificationCompat;
@@ -59,6 +60,7 @@ public class NotificationController {
 
         Notification notification = notificationBuilder.build();
 
+        Log.d("LS", "notify" );
         notificationManager.notify(1, notification);
     }
     private void setApplicationToPushNotification(NotificationCompat.Builder notificationBuilder) {
@@ -79,9 +81,11 @@ public class NotificationController {
     }
 
     private void setNotificationIcon(NotificationCompat.Builder notificationBuilder) {
-        if(_mainActivity.isMinimumTimeOut()){
+        if(_mainActivity.isShortDurationTime()){
+            Log.d("LS", "set icon short" );
             notificationBuilder.setSmallIcon(R.drawable.ic_stat_light_time_short);
         }else{
+            Log.d("LS", "set icon long" );
             notificationBuilder.setSmallIcon(R.drawable.ic_stat_light_time_long);
         }
     }

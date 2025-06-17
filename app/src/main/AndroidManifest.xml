@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.WRITE_SETTINGS" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
@@ -10,6 +11,12 @@
         android:label="@string/app_name"
         android:supportsRtl="true"
         android:theme="@android:style/Theme.Translucent.NoTitleBar">
+        <service android:name=".ShortDurationService"
+            android:permission="android.permission.BIND_JOB_SERVICE"
+            android:exported="false"/>
+        <service android:name=".LongDurationService"
+            android:permission="android.permission.BIND_JOB_SERVICE"
+            android:exported="false"/>
         <activity
             android:name="jp.superwooo.chaipon.lighttimeswitcher.MainActivity"
             android:exported="true"
