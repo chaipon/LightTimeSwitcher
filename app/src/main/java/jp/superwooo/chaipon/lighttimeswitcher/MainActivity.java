@@ -20,7 +20,7 @@ import static android.provider.Settings.*;
 import static android.widget.Toast.*;
 
 public class MainActivity extends AppCompatActivity {
-    public static enum DurationType{ None, Short, Long};
+    public static enum DurationType{ Short, Long};
 
     /**
      * ATTENTION: This was auto-generated to implement the App Indexing API.
@@ -29,17 +29,14 @@ public class MainActivity extends AppCompatActivity {
     //private GoogleApiClient client;
     public static final Integer MinTime = 15 * 1000;
     public static final Integer MaxTime = 30 * 60 * 1000;
-    ShortLongTimes _shortLongTimes;
+    TimeDurationPreference _timeDurationPreference;
     private TimeDurationValue _currentTimeOUtDuration;
     private StringBuilder _timeOutMessage = new StringBuilder();
-    public boolean isShortDurationTime(){
-        return _currentTimeOUtDuration.equals(_shortLongTimes.getShortDuration());
-    }
     public StringBuilder getTimeoutMessage(){
         return _timeOutMessage;
     }
     ActivityResultLauncher _requestPermissionLauncher = registerForActivityResult(new ActivityResultContracts.RequestPermission(), isGranted ->{
-        switchTimeoutByUser();
+        switchTimeOutByUser();
     });
     ActivityResultLauncher _startLauncher = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result ->{
         if(Settings.System.canWrite(getApplicationContext()))
@@ -63,50 +60,24 @@ public class MainActivity extends AppCompatActivity {
         Log.d("LS", "Main activity start");
         super.onCreate(savedInstanceState);
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
-        int shortSec = preferences.getInt(SettingsActivity.MinimumKey, MinTime / 1000);
-        int longSec = preferences.getInt(SettingsActivity.MaximumKey, MaxTime / 1000);
-        _shortLongTimes = new ShortLongTimes(shortSec, longSec, SettingsActivity.limitTime);
+        _timeDurationPreference = new TimeDurationPreference(getApplicationContext());
 
         setCurrantTimeOut();
-        DurationType requiredDuration = getRequiredDurationType();
-        Log.d("LS", "duration type: " + requiredDuration.name());
         if(Settings.System.canWrite(getApplicationContext())) {
-            switch (requiredDuration) {
-                case None:
-                    switchTimeoutByUser();
-                    break;
-                case Short:
-                case Long:
-                    setRequestedTimeout(requiredDuration);
-                    break;
-            }
+            switchTimeOutByUser();
         } else {
             setTheme(androidx.appcompat.R.style.Base_Theme_AppCompat);
             setContentView(R.layout.explain_to_setting_system_permissions);
         }
-
     }
 
-    private DurationType getRequiredDurationType() {
-        Intent intent = getIntent();
-        String intentDuration = intent.getStringExtra(DurationTypeKey);
-        return intentDuration == null ? DurationType.None : DurationType.valueOf(intentDuration);
-    }
 
     private void showExplainToSetSystemSettings() {
         makeText(getApplicationContext(), "Please set system permission.", LENGTH_SHORT).show();
     }
 
-    private void setRequestedTimeout(DurationType requiredDuration){
-        Log.d("LS", "set requested timeout.");
-        setTimeOut(getTimeOut(requiredDuration));
-        makeTimeOutMessage();
-        notifyTimeOut();
-        this.finish();
-    }
-
-    private void switchTimeoutByUser(){
-        setTimeOut(getTimeOut(DurationType.None));
+    private void switchTimeOutByUser(){
+        setTimeOut(getSwitchedTimeDurationValue());
         makeTimeOutMessage();
         showTimeOutMessageToToast();
         notifyTimeOut();
@@ -121,18 +92,6 @@ public class MainActivity extends AppCompatActivity {
             e.printStackTrace();
         }
     }
-    private TimeDurationValue getTimeOut(DurationType requiredDurationType){
-        switch(requiredDurationType) {
-            case Long:
-                return _shortLongTimes.getLongDuration();
-            case Short:
-                return _shortLongTimes.getShortDuration();
-            case None:
-            default:
-                return getSwitchedTimeDurationValue();
-        }
-
-    }
 
     private void setTimeOut(TimeDurationValue settingDuration){
         if(_currentTimeOUtDuration.equals(settingDuration)) return;
@@ -141,19 +100,21 @@ public class MainActivity extends AppCompatActivity {
         _currentTimeOUtDuration = settingDuration;
     }
     private TimeDurationValue getSwitchedTimeDurationValue() {
-        if(_currentTimeOUtDuration.equals(_shortLongTimes.getShortDuration())){
+        if(_currentTimeOUtDuration.equals(_timeDurationPreference.getShort())){
             Log.d("LS", "set to max");
-            return _shortLongTimes.getLongDuration();
+            return _timeDurationPreference.getLong();
         }else{
-            Log.d("LS", "set to min ###################### ");
-            return _shortLongTimes.getShortDuration();
+            Log.d("LS", "set to min");
+            return _timeDurationPreference.getShort();
         }
     }
 
     public static String DurationTypeKey = "DurationType";
 
     private void notifyTimeOut() {
-        NotificationController notification = new NotificationController(this);
+        NotificationController notification =
+                new NotificationController(getApplicationContext(),
+                        _timeDurationPreference.getType(_currentTimeOUtDuration));
         notification.notifyTimeOut();
     }
 

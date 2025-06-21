@@ -17,7 +17,12 @@ import java.util.concurrent.TimeUnit;
 public class LongDurationService extends DurationService {
 
     @Override
-    protected MainActivity.DurationType getTimeDuration() {
-        return MainActivity.DurationType.Long;
+    protected DurationType getTimeDuration() {
+        return DurationType.Long;
+    }
+
+    @Override
+    protected Class getDurationServiceClass() {
+        return LongDurationService.class;
     }
 }
