@@ -14,6 +14,7 @@ import androidx.preference.PreferenceManager;
 import android.util.Log;
 import android.widget.CheckBox;
 import android.widget.EditText;
+import android.widget.LinearLayout;
 import android.widget.TimePicker;
 
 import androidx.annotation.RequiresApi;
@@ -37,7 +38,6 @@ public class SettingsActivity extends AppCompatActivity {
     private final String MinuteKey = "minute";
     private final String EnableKey = "enable";
 
-    @RequiresApi(api = Build.VERSION_CODES.M)
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -112,6 +112,7 @@ public class SettingsActivity extends AppCompatActivity {
                 .setPersisted(true);
 
         Log.d("LS", "schedule delay time: " + delayTime + ", jobid: " + jobId);
+        scheduler.cancel(jobId);
         scheduler.schedule(builder.build());
 
 
