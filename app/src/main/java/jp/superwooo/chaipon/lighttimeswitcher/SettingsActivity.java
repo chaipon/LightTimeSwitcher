@@ -37,6 +37,7 @@ public class SettingsActivity extends AppCompatActivity {
     private final String HourKey = "hour";
     private final String MinuteKey = "minute";
     private final String EnableKey = "enable";
+    private TimeDurationPreference _timeDurationPreference;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -44,16 +45,16 @@ public class SettingsActivity extends AppCompatActivity {
         setTheme(androidx.appcompat.R.style.Base_Theme_AppCompat);
         setContentView(R.layout.activity_settings);
         _context = getApplicationContext();
+        _timeDurationPreference = new TimeDurationPreference(_context);
 
         LoadSettings();
 
         findViewById(R.id.applyButton).setOnClickListener(v -> {
             EditText minimumText = findViewById(R.id.editMinimumTime);
             EditText maximumText = findViewById(R.id.editMaximumTime);
-            LimitTime limit = new LimitTime(SettingEnableMinimumTime, SettingEnableMaximumTime);
             int shortDuration = parseInt(minimumText.getText().toString(), loadCurrentMinimum());
             int longDuration = parseInt(maximumText.getText().toString(), loadCurrentMaximum());
-            ShortLongTimes shortLongTimes = new ShortLongTimes(shortDuration, longDuration, limit);
+            ShortLongTimes shortLongTimes = new ShortLongTimes(shortDuration, longDuration, limitTime);
             minimumText.setText(String.valueOf(shortLongTimes.getShortDuration().sec()));
             maximumText.setText(String.valueOf(shortLongTimes.getLongDuration().sec()));
 
@@ -134,14 +135,10 @@ public class SettingsActivity extends AppCompatActivity {
         }
     }
     private int loadCurrentMinimum(){
-        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
-        int min = preferences.getInt(MinimumKey, MainActivity.MinTime / 1000);
-        return min;
+        return _timeDurationPreference.getShort().sec();
     }
     private int loadCurrentMaximum(){
-        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
-        int max = preferences.getInt(MaximumKey, MainActivity.MaxTime / 1000);
-        return max;
+        return _timeDurationPreference.getLong().sec();
     }
 
     private void LoadSettings() {
@@ -149,10 +146,8 @@ public class SettingsActivity extends AppCompatActivity {
 
         EditText minimumText = findViewById(R.id.editMinimumTime);
         EditText maximumText = findViewById(R.id.editMaximumTime);
-        int minimum = preferences.getInt(MinimumKey, MainActivity.MinTime / 1000);
-        int maximum = preferences.getInt(MaximumKey, MainActivity.MaxTime / 1000);
-        minimumText.setText(String.valueOf(minimum));
-        maximumText.setText(String.valueOf(maximum));
+        minimumText.setText(String.valueOf(_timeDurationPreference.getShort().sec()));
+        maximumText.setText(String.valueOf(_timeDurationPreference.getLong().sec()));
 
         CheckBox shortCheckBox = findViewById(R.id.checkbox_enable_time_to_set_short);
         CheckBox longCheckBox = findViewById(R.id.checkbox_enable_time_to_set_long);
