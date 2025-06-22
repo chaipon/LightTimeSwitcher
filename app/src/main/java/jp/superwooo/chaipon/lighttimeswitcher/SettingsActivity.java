@@ -8,16 +8,13 @@ import android.app.job.JobScheduler;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.SharedPreferences;
-import android.os.Build;
 import android.os.Bundle;
 import androidx.preference.PreferenceManager;
 import android.util.Log;
 import android.widget.CheckBox;
 import android.widget.EditText;
-import android.widget.LinearLayout;
 import android.widget.TimePicker;
 
-import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 
 import java.time.Duration;
@@ -28,24 +25,22 @@ public class SettingsActivity extends AppCompatActivity {
     public static final String MaximumKey = "maximumTime";
     static final int SettingEnableMinimumTime = 10;
     static final int SettingEnableMaximumTime = 3600 * 24;
-    public static final LimitTime limitTime = new LimitTime(SettingEnableMinimumTime, SettingEnableMaximumTime);
-    private TimePicker _set_long_at;
-    private TimePicker _set_short_at;
-    private Context _context;
+    public static final LimitTime LimitTime = new LimitTime(SettingEnableMinimumTime, SettingEnableMaximumTime);
+    private Context mContext;
     private final String EnableTimeShortKeyPref = "enable_time_short_";
     private final String EnableTimeLongKeyPref = "enable_time_long_";
     private final String HourKey = "hour";
     private final String MinuteKey = "minute";
     private final String EnableKey = "enable";
-    private TimeDurationPreference _timeDurationPreference;
+    private TimeDurationPreference mTimeDurationPreference;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setTheme(androidx.appcompat.R.style.Base_Theme_AppCompat);
         setContentView(R.layout.activity_settings);
-        _context = getApplicationContext();
-        _timeDurationPreference = new TimeDurationPreference(_context);
+        mContext = getApplicationContext();
+        mTimeDurationPreference = new TimeDurationPreference(mContext);
 
         LoadSettings();
 
@@ -54,7 +49,7 @@ public class SettingsActivity extends AppCompatActivity {
             EditText maximumText = findViewById(R.id.editMaximumTime);
             int shortDuration = parseInt(minimumText.getText().toString(), loadCurrentMinimum());
             int longDuration = parseInt(maximumText.getText().toString(), loadCurrentMaximum());
-            ShortLongTimes shortLongTimes = new ShortLongTimes(shortDuration, longDuration, limitTime);
+            ShortLongTimes shortLongTimes = new ShortLongTimes(shortDuration, longDuration, LimitTime);
             minimumText.setText(String.valueOf(shortLongTimes.getShortDuration().sec()));
             maximumText.setText(String.valueOf(shortLongTimes.getLongDuration().sec()));
 
@@ -72,24 +67,24 @@ public class SettingsActivity extends AppCompatActivity {
         });
         findViewById(R.id.checkbox_enable_time_to_set_short).setOnClickListener(v -> {
             if(((CheckBox)v).isChecked())
-                EnableTime(ShortDurationService.class, R.id.set_short_at, _short_job_id, EnableTimeShortKeyPref);
+                EnableTime(ShortDurationService.class, R.id.set_short_at, mShortJobId, EnableTimeShortKeyPref);
            else
-                DisableTime(R.id.set_short_at, _short_job_id, EnableTimeShortKeyPref);
+                DisableTime(R.id.set_short_at, mShortJobId, EnableTimeShortKeyPref);
         });
         findViewById(R.id.checkbox_enable_time_to_set_long).setOnClickListener(v -> {
             if(((CheckBox)v).isChecked())
-                EnableTime(LongDurationService.class, R.id.set_long_at, _long_job_id, EnableTimeLongKeyPref);
+                EnableTime(LongDurationService.class, R.id.set_long_at, mLongJobId, EnableTimeLongKeyPref);
             else
-                DisableTime(R.id.set_long_at, _long_job_id, EnableTimeLongKeyPref);
+                DisableTime(R.id.set_long_at, mLongJobId, EnableTimeLongKeyPref);
         });
 
     }
-    private final int _short_job_id = 1;
-    private final int _long_job_id = 2;
+    private final int mShortJobId = 1;
+    private final int mLongJobId = 2;
     private void DisableTime(int viewId, int jobId, String prefKey){
         TimePicker timePicker = findViewById(viewId);
         timePicker.setEnabled(true);
-        JobScheduler scheduler = (JobScheduler) _context.getSystemService(Context.JOB_SCHEDULER_SERVICE);
+        JobScheduler scheduler = (JobScheduler) mContext.getSystemService(Context.JOB_SCHEDULER_SERVICE);
         scheduler.cancel(jobId);
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
         SharedPreferences.Editor e = preferences.edit();
@@ -103,8 +98,8 @@ public class SettingsActivity extends AppCompatActivity {
         LocalTime targetTime = LocalTime.of(timePicker.getHour(), timePicker.getMinute());
         LocalTime now = LocalTime.now();
 
-        ComponentName componentName = new ComponentName(_context, cls);
-        JobScheduler scheduler = (JobScheduler) _context.getSystemService(Context.JOB_SCHEDULER_SERVICE);
+        ComponentName componentName = new ComponentName(mContext, cls);
+        JobScheduler scheduler = (JobScheduler) mContext.getSystemService(Context.JOB_SCHEDULER_SERVICE);
         long delayTime = Duration.between(now, targetTime).toMillis();
         if(delayTime < 0)
             Log.e("LS", "Invalid delay time: " + delayTime + ", jobid: " + jobId);
@@ -135,10 +130,10 @@ public class SettingsActivity extends AppCompatActivity {
         }
     }
     private int loadCurrentMinimum(){
-        return _timeDurationPreference.getShort().sec();
+        return mTimeDurationPreference.getShort().sec();
     }
     private int loadCurrentMaximum(){
-        return _timeDurationPreference.getLong().sec();
+        return mTimeDurationPreference.getLong().sec();
     }
 
     private void LoadSettings() {
@@ -146,8 +141,8 @@ public class SettingsActivity extends AppCompatActivity {
 
         EditText minimumText = findViewById(R.id.editMinimumTime);
         EditText maximumText = findViewById(R.id.editMaximumTime);
-        minimumText.setText(String.valueOf(_timeDurationPreference.getShort().sec()));
-        maximumText.setText(String.valueOf(_timeDurationPreference.getLong().sec()));
+        minimumText.setText(String.valueOf(mTimeDurationPreference.getShort().sec()));
+        maximumText.setText(String.valueOf(mTimeDurationPreference.getLong().sec()));
 
         CheckBox shortCheckBox = findViewById(R.id.checkbox_enable_time_to_set_short);
         CheckBox longCheckBox = findViewById(R.id.checkbox_enable_time_to_set_long);

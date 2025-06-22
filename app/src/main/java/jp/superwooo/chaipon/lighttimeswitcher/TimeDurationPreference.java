@@ -13,7 +13,7 @@ public class TimeDurationPreference {
         SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(mContext.getApplicationContext());
         int shortSec = preferences.getInt(SettingsActivity.MinimumKey, MainActivity.MinTime / 1000);
         int longSec = preferences.getInt(SettingsActivity.MaximumKey, MainActivity.MaxTime / 1000);
-        mShortLongTimes = new ShortLongTimes(shortSec, longSec, SettingsActivity.limitTime);
+        mShortLongTimes = new ShortLongTimes(shortSec, longSec, SettingsActivity.LimitTime);
     }
     public ShortLongTimes getShortLongTimes() {
         return mShortLongTimes;

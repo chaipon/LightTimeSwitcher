@@ -1,13 +1,9 @@
 package jp.superwooo.chaipon.lighttimeswitcher;
 
 import android.content.ContentResolver;
-import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Bundle;
-import androidx.preference.PreferenceManager;
 import android.provider.Settings;
 import android.util.Log;
 import android.view.View;
@@ -29,18 +25,18 @@ public class MainActivity extends AppCompatActivity {
     //private GoogleApiClient client;
     public static final Integer MinTime = 15 * 1000;
     public static final Integer MaxTime = 30 * 60 * 1000;
-    TimeDurationPreference _timeDurationPreference;
-    private TimeDurationValue _currentTimeOUtDuration;
-    private StringBuilder _timeOutMessage = new StringBuilder();
+    TimeDurationPreference mTimeDurationPreference;
+    private TimeDurationValue mCurrentTimeOUtDuration;
+    private StringBuilder mTimeOutMessage = new StringBuilder();
     public StringBuilder getTimeoutMessage(){
-        return _timeOutMessage;
+        return mTimeOutMessage;
     }
-    ActivityResultLauncher _requestPermissionLauncher = registerForActivityResult(new ActivityResultContracts.RequestPermission(), isGranted ->{
+    ActivityResultLauncher mRequestPermissionLauncher = registerForActivityResult(new ActivityResultContracts.RequestPermission(), isGranted ->{
         switchTimeOutByUser();
     });
-    ActivityResultLauncher _startLauncher = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result ->{
+    ActivityResultLauncher mStartLauncher = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result ->{
         if(Settings.System.canWrite(getApplicationContext()))
-            _requestPermissionLauncher.launch("android.permission.POST_NOTIFICATIONS");
+            mRequestPermissionLauncher.launch("android.permission.POST_NOTIFICATIONS");
         else
             showExplainToSetSystemSettings();
     });
@@ -49,7 +45,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         Log.d("LS", "Main activity start");
         super.onCreate(savedInstanceState);
-        _timeDurationPreference = new TimeDurationPreference(getApplicationContext());
+        mTimeDurationPreference = new TimeDurationPreference(getApplicationContext());
 
         setCurrantTimeOut();
         if(Settings.System.canWrite(getApplicationContext())) {
@@ -76,25 +72,25 @@ public class MainActivity extends AppCompatActivity {
         ContentResolver cr = getContentResolver();
         try {
             int timeOut = Settings.System.getInt(cr, Settings.System.SCREEN_OFF_TIMEOUT) / 1000;
-            _currentTimeOUtDuration = new TimeDurationValue(timeOut, SettingsActivity.limitTime);
+            mCurrentTimeOUtDuration = new TimeDurationValue(timeOut, SettingsActivity.LimitTime);
         } catch (SettingNotFoundException e) {
             e.printStackTrace();
         }
     }
 
     private void setTimeOut(TimeDurationValue settingDuration){
-        if(_currentTimeOUtDuration.equals(settingDuration)) return;
+        if(mCurrentTimeOUtDuration.equals(settingDuration)) return;
         Log.d("LS", "set time out: " + settingDuration.sec());
         Settings.System.putInt(getContentResolver(), Settings.System.SCREEN_OFF_TIMEOUT, settingDuration.milliSecond());
-        _currentTimeOUtDuration = settingDuration;
+        mCurrentTimeOUtDuration = settingDuration;
     }
     private TimeDurationValue getSwitchedTimeDurationValue() {
-        if(_currentTimeOUtDuration.equals(_timeDurationPreference.getShort())){
+        if(mCurrentTimeOUtDuration.equals(mTimeDurationPreference.getShort())){
             Log.d("LS", "set to max");
-            return _timeDurationPreference.getLong();
+            return mTimeDurationPreference.getLong();
         }else{
             Log.d("LS", "set to min");
-            return _timeDurationPreference.getShort();
+            return mTimeDurationPreference.getShort();
         }
     }
 
@@ -103,21 +99,21 @@ public class MainActivity extends AppCompatActivity {
     private void notifyTimeOut() {
         NotificationController notification =
                 new NotificationController(getApplicationContext(),
-                        _timeDurationPreference.getType(_currentTimeOUtDuration));
+                        mTimeDurationPreference.getType(mCurrentTimeOUtDuration));
         notification.notifyTimeOut();
     }
 
     private void makeTimeOutMessage() {
-        _timeOutMessage.append(getString(R.string.setting_message, _currentTimeOUtDuration.sec()));
+        mTimeOutMessage.append(getString(R.string.setting_message, mCurrentTimeOUtDuration.sec()));
     }
 
     private void showTimeOutMessageToToast() {
-        makeText(getApplicationContext(), _timeOutMessage.toString(), LENGTH_SHORT).show();
+        makeText(getApplicationContext(), mTimeOutMessage.toString(), LENGTH_SHORT).show();
     }
 
     public void goToSystemSettings(View view) {
         Intent permissionIntent = new Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS);
         permissionIntent.setData(Uri.parse("package:" + getApplicationContext().getPackageName()));
-        _startLauncher.launch(permissionIntent);
+        mStartLauncher.launch(permissionIntent);
     }
 }
