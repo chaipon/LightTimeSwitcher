@@ -59,7 +59,7 @@ public abstract class DurationService extends JobService {
         ContentResolver cr = getContentResolver();
         try {
             int timeOut = Settings.System.getInt(cr, Settings.System.SCREEN_OFF_TIMEOUT) / 1000;
-            mCurrentTimeOUtDuration = new TimeDurationValue(timeOut, SettingsActivity.limitTime);
+            mCurrentTimeOUtDuration = new TimeDurationValue(timeOut, SettingsActivity.LimitTime);
         } catch (Settings.SettingNotFoundException e) {
             e.printStackTrace();
         }

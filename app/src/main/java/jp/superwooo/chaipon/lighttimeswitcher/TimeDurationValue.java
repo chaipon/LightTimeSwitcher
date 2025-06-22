@@ -1,11 +1,11 @@
 package jp.superwooo.chaipon.lighttimeswitcher;
 
 public class TimeDurationValue {
-    final private  int _milliSecond;
-    final private  int _second;
+    final private  int mMilliSecond;
+    final private  int mSecond;
     public TimeDurationValue(int second, LimitTime limit){
-        _second = limit.apply(second);
-        _milliSecond = _second * 1000;
+        mSecond = limit.apply(second);
+        mMilliSecond = mSecond * 1000;
     }
 
     @Override
@@ -14,16 +14,16 @@ public class TimeDurationValue {
         if(value == null || getClass() != value.getClass()) return false;
 
         TimeDurationValue other = (TimeDurationValue)value;
-        return _second == other._second;
+        return mSecond == other.mSecond;
     }
     @Override
     public int hashCode(){
-        return Integer.hashCode(_second);
+        return Integer.hashCode(mSecond);
     }
 
 
 
-    public int sec(){return _second;}
-    public int milliSecond(){return _milliSecond;}
+    public int sec(){return mSecond;}
+    public int milliSecond(){return mMilliSecond;}
 
 }

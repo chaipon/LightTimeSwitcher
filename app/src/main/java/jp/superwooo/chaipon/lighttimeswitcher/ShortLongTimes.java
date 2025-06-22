@@ -1,13 +1,13 @@
 package jp.superwooo.chaipon.lighttimeswitcher;
 
 public class ShortLongTimes {
-    private final TimeDurationValue _short;
-    private final TimeDurationValue _long;
+    private final TimeDurationValue mShort;
+    private final TimeDurationValue mLong;
     public ShortLongTimes(int short_duration, int long_duration, LimitTime limit){
         if(short_duration > long_duration) short_duration = long_duration;
-        _short = new TimeDurationValue(short_duration, limit);
-        _long = new TimeDurationValue(long_duration, limit);
+        mShort = new TimeDurationValue(short_duration, limit);
+        mLong = new TimeDurationValue(long_duration, limit);
     }
-    public TimeDurationValue getShortDuration(){return _short;}
-    public TimeDurationValue getLongDuration(){return _long;}
+    public TimeDurationValue getShortDuration(){return mShort;}
+    public TimeDurationValue getLongDuration(){return mLong;}
 }
