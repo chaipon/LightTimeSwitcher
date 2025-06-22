@@ -1,6 +1,5 @@
 package jp.superwooo.chaipon.lighttimeswitcher;
 
-import static android.widget.Toast.LENGTH_SHORT;
 import static android.widget.Toast.makeText;
 
 import android.app.job.JobInfo;
@@ -27,9 +26,6 @@ public class SettingsActivity extends AppCompatActivity {
     private Context mContext;
     private final String EnableTimeShortKeyPref = "enable_time_short_";
     private final String EnableTimeLongKeyPref = "enable_time_long_";
-    private final String HourKey = "hour";
-    private final String MinuteKey = "minute";
-    private final String EnableKey = "enable";
     private TimeDurationPreference mTimeDurationPreference;
 
     @Override
@@ -55,32 +51,28 @@ public class SettingsActivity extends AppCompatActivity {
         });
         findViewById(R.id.checkbox_enable_time_to_set_short).setOnClickListener(v -> {
             if(((CheckBox)v).isChecked())
-                EnableTime(ShortDurationService.class, R.id.set_short_at, mShortJobId, EnableTimeShortKeyPref);
+                enableTime(ShortDurationService.class, R.id.set_short_at, mShortJobId, EnableTimeShortKeyPref);
            else
-                DisableTime(R.id.set_short_at, mShortJobId, EnableTimeShortKeyPref);
+                disableTime(R.id.set_short_at, mShortJobId, EnableTimeShortKeyPref);
         });
         findViewById(R.id.checkbox_enable_time_to_set_long).setOnClickListener(v -> {
             if(((CheckBox)v).isChecked())
-                EnableTime(LongDurationService.class, R.id.set_long_at, mLongJobId, EnableTimeLongKeyPref);
+                enableTime(LongDurationService.class, R.id.set_long_at, mLongJobId, EnableTimeLongKeyPref);
             else
-                DisableTime(R.id.set_long_at, mLongJobId, EnableTimeLongKeyPref);
+                disableTime(R.id.set_long_at, mLongJobId, EnableTimeLongKeyPref);
         });
 
     }
     private final int mShortJobId = 1;
     private final int mLongJobId = 2;
-    private void DisableTime(int viewId, int jobId, String prefKey){
+    private void disableTime(int viewId, int jobId, String prefKey){
         TimePicker timePicker = findViewById(viewId);
         timePicker.setEnabled(true);
         JobScheduler scheduler = (JobScheduler) mContext.getSystemService(Context.JOB_SCHEDULER_SERVICE);
         scheduler.cancel(jobId);
-        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
-        SharedPreferences.Editor e = preferences.edit();
-        String enableKey = prefKey + EnableKey;
-        e.putBoolean(enableKey, false);
-        e.apply();
+        EnableTimePreference.Create(mContext, prefKey).save(false);
     }
-    private void EnableTime(Class cls,int viewId, int jobId, String prefKey){
+    private void enableTime(Class cls, int viewId, int jobId, String prefKey){
         TimePicker timePicker = findViewById(viewId);
         timePicker.setEnabled(false);
         LocalTime targetTime = LocalTime.of(timePicker.getHour(), timePicker.getMinute());
@@ -99,16 +91,7 @@ public class SettingsActivity extends AppCompatActivity {
         scheduler.cancel(jobId);
         scheduler.schedule(builder.build());
 
-
-        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
-        SharedPreferences.Editor e = preferences.edit();
-        String hourKey = prefKey + HourKey;
-        String minuteKey = prefKey + MinuteKey;
-        String enableKey = prefKey + EnableKey;
-        e.putBoolean(enableKey, true);
-        e.putInt(hourKey, timePicker.getHour());
-        e.putInt(minuteKey, timePicker.getMinute());
-        e.apply();
+        EnableTimePreference.Create(mContext, prefKey).save(targetTime, true);
     }
      private int parseInt(String inputText, int defaultTime){
         try{
@@ -125,26 +108,35 @@ public class SettingsActivity extends AppCompatActivity {
     }
 
     private void LoadSettings() {
-        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
+        loadTimeDurationSettings();
+        loadEnableShortTimeSettings();
+        loadEnableLongTimeSettings();
+    }
 
+    private void loadEnableTimeSettings(String prefixKey, int checkBoxId, int timePickerId) {
+        EnableTimePreference enableTimePreference = EnableTimePreference.Create(mContext, prefixKey);
+
+        CheckBox checkBox = findViewById(checkBoxId);
+        checkBox.setChecked(enableTimePreference.isEnabled());
+
+        TimePicker timePicker = findViewById(timePickerId);
+        timePicker.setHour(enableTimePreference.loadTime().getHour());
+        timePicker.setMinute(enableTimePreference.loadTime().getMinute());
+        timePicker.setEnabled(!checkBox.isChecked());
+
+    }
+    private void loadEnableShortTimeSettings() {
+        loadEnableTimeSettings(EnableTimeShortKeyPref, R.id.checkbox_enable_time_to_set_short, R.id.set_short_at);
+    }
+    private void loadEnableLongTimeSettings() {
+        loadEnableTimeSettings(EnableTimeLongKeyPref, R.id.checkbox_enable_time_to_set_long, R.id.set_long_at);
+    }
+
+    private void loadTimeDurationSettings() {
         EditText minimumText = findViewById(R.id.editMinimumTime);
         EditText maximumText = findViewById(R.id.editMaximumTime);
         minimumText.setText(String.valueOf(mTimeDurationPreference.getShort().sec()));
         maximumText.setText(String.valueOf(mTimeDurationPreference.getLong().sec()));
-
-        CheckBox shortCheckBox = findViewById(R.id.checkbox_enable_time_to_set_short);
-        CheckBox longCheckBox = findViewById(R.id.checkbox_enable_time_to_set_long);
-        shortCheckBox.setChecked(preferences.getBoolean(EnableTimeShortKeyPref + EnableKey, false));
-        longCheckBox.setChecked(preferences.getBoolean(EnableTimeLongKeyPref + EnableKey, false));
-
-        TimePicker shortPicker = findViewById(R.id.set_short_at);
-        TimePicker longPicker = findViewById(R.id.set_long_at);
-        shortPicker.setHour(preferences.getInt(EnableTimeShortKeyPref + HourKey, 0));
-        shortPicker.setMinute(preferences.getInt(EnableTimeShortKeyPref + MinuteKey, 0));
-        shortPicker.setEnabled(!shortCheckBox.isChecked());
-        longPicker.setHour(preferences.getInt(EnableTimeLongKeyPref + HourKey, 0));
-        longPicker.setMinute(preferences.getInt(EnableTimeLongKeyPref + MinuteKey, 0));
-        longPicker.setEnabled(!longCheckBox.isChecked());
     }
 
 
