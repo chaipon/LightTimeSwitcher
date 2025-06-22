@@ -45,21 +45,10 @@ public class MainActivity extends AppCompatActivity {
             showExplainToSetSystemSettings();
     });
 
-    private Intent makeNotificationSettingIntent(Context context) {
-        Intent intent = new Intent();
-        intent.setAction(Settings.ACTION_APP_NOTIFICATION_SETTINGS);
-        intent.setPackage(context.getPackageName());
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            intent.setIdentifier(String.valueOf(context.getApplicationInfo().uid));
-        }
-        return intent;
-    }
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         Log.d("LS", "Main activity start");
         super.onCreate(savedInstanceState);
-        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
         _timeDurationPreference = new TimeDurationPreference(getApplicationContext());
 
         setCurrantTimeOut();
