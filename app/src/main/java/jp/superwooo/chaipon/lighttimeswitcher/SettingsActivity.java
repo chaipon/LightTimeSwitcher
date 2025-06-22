@@ -21,8 +21,6 @@ import java.time.Duration;
 import java.time.LocalTime;
 
 public class SettingsActivity extends AppCompatActivity {
-    public static final String MinimumKey = "minimumTime";
-    public static final String MaximumKey = "maximumTime";
     static final int SettingEnableMinimumTime = 10;
     static final int SettingEnableMaximumTime = 3600 * 24;
     public static final LimitTime LimitTime = new LimitTime(SettingEnableMinimumTime, SettingEnableMaximumTime);
@@ -53,17 +51,7 @@ public class SettingsActivity extends AppCompatActivity {
             minimumText.setText(String.valueOf(shortLongTimes.getShortDuration().sec()));
             maximumText.setText(String.valueOf(shortLongTimes.getLongDuration().sec()));
 
-            SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
-            SharedPreferences.Editor e = preferences.edit();
-            int minimum = shortLongTimes.getShortDuration().sec();
-            int maximum = shortLongTimes.getLongDuration().sec();
-            e.putInt(MinimumKey, minimum);
-            e.putInt(MaximumKey, maximum);
-            e.apply();
-            Log.d("LS", "save minimum: " + minimum);
-            Log.d("LS", "save maximum: " + maximum);
-            String message = getString(R.string.set_mini_max, minimum, maximum);
-            makeText(getApplicationContext(), message, LENGTH_SHORT).show();
+            mTimeDurationPreference.save(shortLongTimes);
         });
         findViewById(R.id.checkbox_enable_time_to_set_short).setOnClickListener(v -> {
             if(((CheckBox)v).isChecked())
