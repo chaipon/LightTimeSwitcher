@@ -15,7 +15,7 @@ public class EnableTimePreference {
     private SharedPreferences mPreference;
     private String mKeyPrefix;
 
-    public static EnableTimePreference Create(Context context, String keyPrefix){
+    public static EnableTimePreference create(Context context, String keyPrefix){
         return new EnableTimePreference(context, keyPrefix);
     }
 
