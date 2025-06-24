@@ -45,6 +45,7 @@ public abstract class DurationService extends JobService {
         JobScheduler scheduler = (JobScheduler) context.getSystemService(Context.JOB_SCHEDULER_SERVICE);
         JobInfo.Builder builder = new JobInfo.Builder(params.getJobId(), componentName)
                 .setMinimumLatency(TimeUnit.HOURS.toMillis(24))
+                .setOverrideDeadline(TimeUnit.HOURS.toMillis(24) + 60_000)
                 .setPersisted(true);
         scheduler.cancel(params.getJobId());
         scheduler.schedule(builder.build());

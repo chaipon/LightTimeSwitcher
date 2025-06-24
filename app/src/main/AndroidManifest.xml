@@ -13,10 +13,10 @@
         android:theme="@android:style/Theme.Translucent.NoTitleBar">
         <service android:name=".ShortDurationService"
             android:permission="android.permission.BIND_JOB_SERVICE"
-            android:exported="false"/>
+            android:exported="true"/>
         <service android:name=".LongDurationService"
             android:permission="android.permission.BIND_JOB_SERVICE"
-            android:exported="false"/>
+            android:exported="true"/>
         <activity
             android:name="jp.superwooo.chaipon.lighttimeswitcher.MainActivity"
             android:exported="true"
