@@ -7,6 +7,7 @@ import android.app.job.JobScheduler;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.os.Build;
 import android.os.Bundle;
 import androidx.preference.PreferenceManager;
 import android.util.Log;
@@ -85,11 +86,19 @@ public class SettingsActivity extends AppCompatActivity {
             Log.e("LS", "Invalid delay time: " + delayTime + ", jobid: " + jobId);
         JobInfo.Builder builder = new JobInfo.Builder(jobId, componentName)
                 .setMinimumLatency(delayTime)
-                .setPersisted(true);
+                .setOverrideDeadline(delayTime + 60_000)
+                .setRequiredNetworkType(JobInfo.NETWORK_TYPE_NONE)
+                .setRequiresBatteryNotLow(false)
+                .setRequiresDeviceIdle(false);
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            builder.setExpedited(true);
+        }
 
         Log.d("LS", "schedule delay time: " + delayTime + ", jobid: " + jobId);
         scheduler.cancel(jobId);
-        scheduler.schedule(builder.build());
+        int ret = scheduler.schedule(builder.build());
+        Log.d("LS", "schedule ret: " + ret);
 
         EnableTimePreference.Create(mContext, prefKey).save(targetTime, true);
     }
