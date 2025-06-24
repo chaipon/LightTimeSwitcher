@@ -16,7 +16,7 @@ public class TimeDurationPreference {
     private static final String MaximumKey = "maximumTime";
     public TimeDurationPreference(Context context){
         mContext = context;
-        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(mContext.getApplicationContext());
+        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(mContext);
         int shortSec = preferences.getInt(MinimumKey, MainActivity.MinTime / 1000);
         int longSec = preferences.getInt(MaximumKey, MainActivity.MaxTime / 1000);
         mShortLongTimes = new ShortLongTimes(shortSec, longSec, SettingsActivity.LimitTime);
@@ -42,7 +42,7 @@ public class TimeDurationPreference {
     }
     public void save(ShortLongTimes shortLongTimes)
     {
-        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(mContext.getApplicationContext());
+        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(mContext);
         SharedPreferences.Editor e = preferences.edit();
         int minimum = shortLongTimes.getShortDuration().sec();
         int maximum = shortLongTimes.getLongDuration().sec();

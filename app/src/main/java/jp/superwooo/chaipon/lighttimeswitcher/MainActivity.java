@@ -1,6 +1,5 @@
 package jp.superwooo.chaipon.lighttimeswitcher;
 
-import android.content.ContentResolver;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
@@ -12,11 +11,9 @@ import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
 
-import static android.provider.Settings.*;
 import static android.widget.Toast.*;
 
 public class MainActivity extends AppCompatActivity {
-    public static enum DurationType{ Short, Long};
 
     /**
      * ATTENTION: This was auto-generated to implement the App Indexing API.
@@ -26,7 +23,7 @@ public class MainActivity extends AppCompatActivity {
     public static final Integer MinTime = 15 * 1000;
     public static final Integer MaxTime = 30 * 60 * 1000;
     TimeDurationPreference mTimeDurationPreference;
-    private TimeDurationValue mCurrentTimeOUtDuration;
+    private TimeDurationValue mCurrentTimeoutDuration;
     private StringBuilder mTimeOutMessage = new StringBuilder();
     public StringBuilder getTimeoutMessage(){
         return mTimeOutMessage;
@@ -47,7 +44,7 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         mTimeDurationPreference = new TimeDurationPreference(getApplicationContext());
 
-        setCurrantTimeOut();
+        setCurrentTimeout();
         if(Settings.System.canWrite(getApplicationContext())) {
             switchTimeOutByUser();
         } else {
@@ -68,24 +65,18 @@ public class MainActivity extends AppCompatActivity {
         notifyTimeOut();
         this.finish();
     }
-    private void setCurrantTimeOut(){
-        ContentResolver cr = getContentResolver();
-        try {
-            int timeOut = Settings.System.getInt(cr, Settings.System.SCREEN_OFF_TIMEOUT) / 1000;
-            mCurrentTimeOUtDuration = new TimeDurationValue(timeOut, SettingsActivity.LimitTime);
-        } catch (SettingNotFoundException e) {
-            e.printStackTrace();
-        }
+    private void setCurrentTimeout(){
+        mCurrentTimeoutDuration = SystemScreenOffTimeoutAccessor.create(getApplicationContext()).read();
     }
 
     private void setTimeOut(TimeDurationValue settingDuration){
-        if(mCurrentTimeOUtDuration.equals(settingDuration)) return;
+        if(mCurrentTimeoutDuration.equals(settingDuration)) return;
         Log.d("LS", "set time out: " + settingDuration.sec());
-        Settings.System.putInt(getContentResolver(), Settings.System.SCREEN_OFF_TIMEOUT, settingDuration.milliSecond());
-        mCurrentTimeOUtDuration = settingDuration;
+        SystemScreenOffTimeoutAccessor.create(getApplicationContext()).write(settingDuration);
+        mCurrentTimeoutDuration = settingDuration;
     }
     private TimeDurationValue getSwitchedTimeDurationValue() {
-        if(mCurrentTimeOUtDuration.equals(mTimeDurationPreference.getShort())){
+        if(mCurrentTimeoutDuration.equals(mTimeDurationPreference.getShort())){
             Log.d("LS", "set to max");
             return mTimeDurationPreference.getLong();
         }else{
@@ -99,12 +90,12 @@ public class MainActivity extends AppCompatActivity {
     private void notifyTimeOut() {
         NotificationController notification =
                 new NotificationController(getApplicationContext(),
-                        mTimeDurationPreference.getType(mCurrentTimeOUtDuration));
+                        mTimeDurationPreference.getType(mCurrentTimeoutDuration));
         notification.notifyTimeOut();
     }
 
     private void makeTimeOutMessage() {
-        mTimeOutMessage.append(getString(R.string.setting_message, mCurrentTimeOUtDuration.sec()));
+        mTimeOutMessage.append(getString(R.string.setting_message, mCurrentTimeoutDuration.sec()));
     }
 
     private void showTimeOutMessageToToast() {
