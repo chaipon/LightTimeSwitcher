@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.WRITE_SETTINGS" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
@@ -23,6 +24,12 @@
                        android:resource="@xml/shortcuts" />
         </activity>
         <activity android:name="jp.superwooo.chaipon.lighttimeswitcher.SettingsActivity" />
+        <receiver android:name=".TimeoutReceiver" android:exported="true" />
+        <receiver android:name=".BOOTReceiver" android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED"/>
+            </intent-filter>
+        </receiver>
     </application>
 
 </manifest>

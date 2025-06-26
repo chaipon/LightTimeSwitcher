@@ -23,4 +23,6 @@
     <string name="settings_apply">設定</string>
     <string name="lighting_time">点灯時間</string>
     <string name="set_mini_max">最小: %1$d秒\n最大: %2$d秒</string>
+    <string name="explain_enable_time_to_set_short_time">選択した時刻に短い点灯時間を設定する</string>
+    <string name="explain_enable_time_to_set_long_time">選択した時刻に長い点灯時間を設定する</string>
 </resources>
