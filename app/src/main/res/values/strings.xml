@@ -29,7 +29,11 @@
     <string name="cancel_button">Cancel</string>
     <string name="move_button">Go to Settings</string>
     <string name="schedule_enable_title">Enable schedule function</string>
-    <string name="explain_schedule_enable_dialog">This feature requires exact alarm permission. Do you want to open the settings screen?</string>
+    <string name="explain_schedule_enable_dialog">To use this feature, exact alarm permission is required.\n\nThe "Alarms and reminders" settings screen will open.\nPlease select "Light Time Switcher" from the list and allow exact alarms.</string>
     <string name="enable_schedule">Schedule function enabled.</string>
     <string name="disable_schedule">Schedule function disabled.</string>
+    <string name="toast_enable_short">Short schedule is now active.</string>
+    <string name="toast_disable_short">Short schedule has been turned off.</string>
+    <string name="toast_enable_long">Long schedule is now active.</string>
+    <string name="toast_disable_long">Long schedule has been turned off.</string>
 </resources>
