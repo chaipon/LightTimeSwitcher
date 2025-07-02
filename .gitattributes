@@ -1,0 +1,8 @@
+# すべてのテキストファイルをLFに統一
+* text=auto eol=lf
+
+# XMLやGradleファイルも明示的にLF
+*.xml text eol=lf
+*.gradle text eol=lf
+*.java text eol=lf
+*.kt text eol=lf
