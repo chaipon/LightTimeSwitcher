@@ -25,4 +25,11 @@
     <string name="set_mini_max">Minimum: %1$d seconds\nMaximum: %2$d seconds</string>
     <string name="explain_enable_time_to_set_short_time">Set short light time at the selected time.</string>
     <string name="explain_enable_time_to_set_long_time">Set long light time at the selected time.</string>
+    <string name="enable_schedule_func">Enable schedule function</string>
+    <string name="cancel_button">Cancel</string>
+    <string name="move_button">Go to Settings</string>
+    <string name="schedule_enable_title">Enable schedule function</string>
+    <string name="explain_schedule_enable_dialog">This feature requires exact alarm permission. Do you want to open the settings screen?</string>
+    <string name="enable_schedule">Schedule function enabled.</string>
+    <string name="disable_schedule">Schedule function disabled.</string>
 </resources>
