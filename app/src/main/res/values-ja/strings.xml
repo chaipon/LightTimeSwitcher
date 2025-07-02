@@ -25,4 +25,11 @@
     <string name="set_mini_max">最小: %1$d秒\n最大: %2$d秒</string>
     <string name="explain_enable_time_to_set_short_time">選択した時刻に短い点灯時間を設定する</string>
     <string name="explain_enable_time_to_set_long_time">選択した時刻に長い点灯時間を設定する</string>
+    <string name="enable_schedule_func">スケジュール機能を有効にする</string>
+    <string name="cancel_button">キャンセル</string>
+    <string name="move_button">移動する</string>
+    <string name="schedule_enable_title">スケジュール機能の有効化</string>
+    <string name="explain_schedule_enable_dialog">この機能を使うには、正確なアラーム許可が必要です。設定画面に移動しますか？</string>
+    <string name="enable_schedule">スケジュール機能を有効にしました。</string>
+    <string name="disable_schedule">スケジュール機能を無効にしました。</string>
 </resources>

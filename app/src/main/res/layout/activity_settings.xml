@@ -59,10 +59,17 @@
         android:text="@string/settings_apply"
         android:textSize="18sp" />
 
+    <CheckBox
+        android:layout_marginTop="50sp"
+        android:id="@+id/checkbox_enable_schedule_func"
+        android:layout_width="wrap_content"
+        android:layout_height="50sp"
+        android:textSize="18sp"
+        android:text="@string/enable_schedule_func"/>
 
     <CheckBox
+        android:layout_marginTop="10sp"
         android:id="@+id/checkbox_enable_time_to_set_short"
-        android:layout_marginTop="50sp"
         android:layout_width="wrap_content"
         android:layout_height="50sp"
         android:textSize="18sp"
