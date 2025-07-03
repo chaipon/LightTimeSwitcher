@@ -24,7 +24,9 @@
             <meta-data android:name="android.app.shortcuts"
                        android:resource="@xml/shortcuts" />
         </activity>
-        <activity android:name="jp.superwooo.chaipon.lighttimeswitcher.SettingsActivity" />
+        <activity
+            android:name="jp.superwooo.chaipon.lighttimeswitcher.SettingsActivity"
+            android:theme="@style/Theme.AppCompat"/>
         <receiver android:name=".TimeoutReceiver" android:exported="true" />
         <receiver android:name=".BOOTReceiver" android:exported="true">
             <intent-filter>
