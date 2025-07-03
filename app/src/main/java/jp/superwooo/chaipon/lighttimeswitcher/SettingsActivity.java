@@ -68,7 +68,6 @@ public class SettingsActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setTheme(androidx.appcompat.R.style.Base_Theme_AppCompat);
         setContentView(R.layout.activity_settings);
         mContext = getApplicationContext();
         mTimeDurationPreference = new TimeDurationPreference(mContext);
