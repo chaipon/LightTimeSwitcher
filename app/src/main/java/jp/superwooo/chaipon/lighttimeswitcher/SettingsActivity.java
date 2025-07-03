@@ -144,8 +144,6 @@ public class SettingsActivity extends AppCompatActivity {
             AlarmScheduler.cancelAll(mContext.getApplicationContext());
     }
 
-    private final int mShortJobId = 1;
-    private final int mLongJobId = 2;
     private void disableTime(DurationType durationType, int viewId, String prefKey){
         TimePicker timePicker = findViewById(viewId);
         timePicker.setEnabled(true);
@@ -162,7 +160,7 @@ public class SettingsActivity extends AppCompatActivity {
      private int parseInt(String inputText, int defaultTime){
         try{
             return Integer.parseInt(inputText);
-        }catch(Exception e){
+        }catch(NumberFormatException e){
             return defaultTime;
         }
     }
@@ -173,7 +171,7 @@ public class SettingsActivity extends AppCompatActivity {
     }
     private boolean canScheduleExactAlarms(){
         if(Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return true;
-        return !mAlarmManager.canScheduleExactAlarms();
+        return mAlarmManager.canScheduleExactAlarms();
     }
 
     private int loadCurrentMinimum(){
