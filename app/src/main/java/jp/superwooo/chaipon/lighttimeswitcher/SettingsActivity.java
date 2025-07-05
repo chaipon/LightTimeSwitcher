@@ -8,6 +8,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.provider.Settings;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -15,6 +17,7 @@ import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.TimePicker;
 import android.widget.Toast;
+import android.util.Log;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
@@ -40,10 +43,10 @@ public class SettingsActivity extends AppCompatActivity {
     private final ActivityResultLauncher<Intent> mSchedulePermissionLauncher =
             registerForActivityResult(new ActivityResultContracts.StartActivityForResult(),result -> {
                 if(canScheduleExactAlarms()){
-                    mScheduleSwitch.setChecked(true);
+                    setScheduleSwitch(true);
                     Toast.makeText(this, R.string.enable_schedule, Toast.LENGTH_SHORT).show();
                 }else{
-                    mScheduleSwitch.setChecked(false);
+                    setScheduleSwitch(false);
                     Toast.makeText(this, R.string.disable_schedule, Toast.LENGTH_SHORT).show();
                 }
                 updateScheduleUIState();
@@ -67,6 +70,7 @@ public class SettingsActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        Log.d("LS", "Start setting activities");
         setContentView(R.layout.activity_settings);
         mContext = getApplicationContext();
         mTimeDurationPreference = new TimeDurationPreference(mContext);
@@ -109,8 +113,13 @@ public class SettingsActivity extends AppCompatActivity {
             }
         });
         mScheduleSwitch.setOnClickListener(v -> {
-           if(requireAlarmPermission())
+            Log.d("LS", "click schedule check box");
+            setScheduleSwitch(mScheduleSwitch.isChecked());
+           if(requireAlarmPermission()) {
+               Log.d("LS", "show permission dialog by click");
                showPermissionDialog();
+               return;
+           }
            updateScheduleUIState();
         });
     }
@@ -123,11 +132,17 @@ public class SettingsActivity extends AppCompatActivity {
                     mSchedulePermissionLauncher.launch(intent);
                 })
                 .setNegativeButton(R.string.cancel_button, (dialog, which) -> {
-                    mScheduleSwitch.setChecked(false);
+                    setScheduleSwitch(false);
                 })
                 .show();
     }
+    private void setScheduleSwitch(boolean enabled){
+        mScheduleSwitch.setChecked(enabled);
+        SchedulePreference.create(getApplicationContext()).save(enabled);
+    }
+
     private void updateScheduleUIState(){
+        Log.d("LS", "updateScheduleUIState");
         boolean scheduleEnabled = mScheduleSwitch.isChecked();
 
         mShortTimeSwitch.setEnabled(scheduleEnabled);
@@ -136,10 +151,17 @@ public class SettingsActivity extends AppCompatActivity {
         mShortTimePicker.setEnabled(scheduleEnabled && !mShortTimeSwitch.isChecked());
         mLongTimePicker.setEnabled(scheduleEnabled && !mLongTimeSwitch.isChecked());
 
-        if(scheduleEnabled)
-            AlarmScheduler.scheduleAll(mContext.getApplicationContext());
-        else
-            AlarmScheduler.cancelAll(mContext.getApplicationContext());
+        try {
+            if (scheduleEnabled)
+                AlarmScheduler.scheduleAll(mContext.getApplicationContext());
+            else
+                AlarmScheduler.cancelAll(mContext.getApplicationContext());
+        }catch (SecurityException e){
+            if(requireAlarmPermission()) {
+                Log.d("LS", "show permission dialog by exception");
+                showPermissionDialog();
+            }
+        }
     }
 
     private void disableTime(DurationType durationType, int viewId, String prefKey){
@@ -180,15 +202,17 @@ public class SettingsActivity extends AppCompatActivity {
     }
 
     private void LoadSettings() {
+        Log.d("LS", "start load settings.");
         loadTimeDurationSettings();
         loadEnableShortTimeSettings();
         loadEnableLongTimeSettings();
-        if(canScheduleExactAlarms()) {
-            mScheduleSwitch.setChecked(true);
-        } else {
-            mScheduleSwitch.setChecked(false);
-        }
+        loadScheduleSwitch();
         updateScheduleUIState();
+        Log.d("LS", "end load settings.");
+    }
+
+    private void loadScheduleSwitch() {
+        mScheduleSwitch.setChecked(SchedulePreference.create(getApplicationContext()).isEnabled());
     }
 
     private void loadEnableTimeSettings(String prefixKey, int checkBoxId, int timePickerId) {
