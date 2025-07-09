@@ -2,6 +2,7 @@
 <ScrollView
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:paddingTop="?attr/actionBarSize"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:fillViewport="true">
@@ -14,7 +15,6 @@
         android:orientation="vertical"
         android:paddingLeft="@dimen/activity_horizontal_margin"
         android:paddingRight="@dimen/activity_horizontal_margin"
-        android:paddingTop="@dimen/activity_vertical_margin"
         android:paddingBottom="@dimen/activity_vertical_margin"
         app:layout_behavior="@string/appbar_scrolling_view_behavior"
         tools:showIn="@layout/activity_settings"
@@ -69,9 +69,11 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="24dp"
         android:layout_marginBottom="24dp"
+        app:strokeColor="@color/card_border"
+        app:strokeWidth="1dp"
         app:cardCornerRadius="8dp"
-        app:cardElevation="4dp"
-        app:cardBackgroundColor="?android:attr/colorBackground">
+        app:cardElevation="6dp"
+        app:cardBackgroundColor="@color/card_background">
         <LinearLayout
             android:layout_marginBottom="20sp"
             android:layout_width="match_parent"
@@ -84,6 +86,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="50sp"
                 android:textSize="20sp"
+                android:textColor="@color/card_foreground"
                 android:text="@string/enable_schedule_func"/>
 
             <CheckBox
@@ -92,6 +95,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="50sp"
                 android:textSize="18sp"
+                android:textColor="@color/card_foreground"
                 android:text="@string/explain_enable_time_to_set_short_time"/>
             <TimePicker
                 android:id="@+id/set_short_at"
@@ -104,6 +108,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="50sp"
                 android:textSize="18sp"
+                android:textColor="@color/card_foreground"
                 android:text="@string/explain_enable_time_to_set_long_time"/>
             <TimePicker
                 android:id="@+id/set_long_at"
@@ -113,5 +118,26 @@
         </LinearLayout>
 
     </androidx.cardview.widget.CardView>
+    <TextView
+        android:id="@+id/text_open_source_licenses"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/open_source_licenses"
+        android:textColor="@color/card_foreground"
+        android:textSize="16sp"
+        android:paddingTop="16dp"
+        android:clickable="true"
+        android:focusable="true" />
+
+    <TextView
+        android:id="@+id/text_privacy_policy"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/privacy_policy"
+        android:textColor="@color/card_foreground"
+        android:textSize="16sp"
+        android:paddingTop="8dp"
+        android:autoLink="web"
+        android:linksClickable="true" />
     </LinearLayout>
 </ScrollView>

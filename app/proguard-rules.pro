@@ -15,3 +15,6 @@
 #-keepclassmembers class fqcn.of.javascript.interface.for.webview {
 #   public *;
 #}
+# OSS Licenses Plugin 用のルール
+-keep class com.google.android.gms.oss.licenses.** { *; }
+-keep class * extends com.google.android.gms.oss.licenses.OssLicensesMenuActivity
