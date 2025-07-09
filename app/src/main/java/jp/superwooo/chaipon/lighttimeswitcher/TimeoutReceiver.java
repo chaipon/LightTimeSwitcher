@@ -20,5 +20,6 @@ public class TimeoutReceiver extends BroadcastReceiver {
                     DurationType.Short.create(context.getApplicationContext());
         }
         durationService.setTimeOut();
+        AlarmScheduler.scheduleAll(context.getApplicationContext());
     }
 }

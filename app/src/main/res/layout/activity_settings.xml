@@ -1,89 +1,143 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout
+<ScrollView
     xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:paddingTop="?attr/actionBarSize"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:paddingLeft="@dimen/activity_horizontal_margin"
-    android:paddingRight="@dimen/activity_horizontal_margin"
-    android:paddingTop="@dimen/activity_vertical_margin"
-    android:paddingBottom="@dimen/activity_vertical_margin"
-    app:layout_behavior="@string/appbar_scrolling_view_behavior"
-    tools:showIn="@layout/activity_settings"
-    tools:context="jp.superwooo.chaipon.lighttimeswitcher.SettingsActivity">
+    android:fillViewport="true">
+    <LinearLayout
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:tools="http://schemas.android.com/tools"
+        xmlns:app="http://schemas.android.com/apk/res-auto"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:paddingLeft="@dimen/activity_horizontal_margin"
+        android:paddingRight="@dimen/activity_horizontal_margin"
+        android:paddingBottom="@dimen/activity_vertical_margin"
+        app:layout_behavior="@string/appbar_scrolling_view_behavior"
+        tools:showIn="@layout/activity_settings"
+        tools:context="jp.superwooo.chaipon.lighttimeswitcher.SettingsActivity">
 
+
+        <TextView
+            android:id="@+id/settingMinimumExplain"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="18sp"
+            android:text="@string/minimum_time" />
+
+        <EditText
+            android:id="@+id/editMinimumTime"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/settingMinimumExplain"
+            android:ems="10"
+            android:hint="@string/default_minimum_sec"
+            android:textSize="18sp"
+            android:inputType= "numberSigned"
+            android:labelFor="@id/settingMinimumExplain"
+            android:importantForAutofill="no" />
+
+        <TextView
+            android:id="@+id/settingMaximumExplain"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="18sp"
+            android:text="@string/maximum_time" />
+
+        <EditText
+            android:id="@+id/editMaximumTime"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ems="10"
+            android:textSize="18sp"
+            android:hint="@string/default_maximum_sec"
+            android:inputType="numberSigned"
+            android:labelFor="@id/settingMaximumExplain"
+            android:importantForAutofill="no" />
+
+        <Button
+            android:id="@+id/applyButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/settings_apply"
+            android:textSize="18sp" />
+    <androidx.cardview.widget.CardView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="24dp"
+        android:layout_marginBottom="24dp"
+        app:strokeColor="@color/card_border"
+        app:strokeWidth="1dp"
+        app:cardCornerRadius="8dp"
+        app:cardElevation="6dp"
+        app:cardBackgroundColor="@color/card_background">
+        <LinearLayout
+            android:layout_marginBottom="20sp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <CheckBox
+                android:id="@+id/checkbox_enable_schedule_func"
+                android:layout_width="wrap_content"
+                android:layout_height="50sp"
+                android:textSize="20sp"
+                android:textColor="@color/card_foreground"
+                android:text="@string/enable_schedule_func"/>
+
+            <CheckBox
+                android:layout_marginTop="10sp"
+                android:id="@+id/checkbox_enable_time_to_set_short"
+                android:layout_width="wrap_content"
+                android:layout_height="50sp"
+                android:textSize="18sp"
+                android:textColor="@color/card_foreground"
+                android:text="@string/explain_enable_time_to_set_short_time"/>
+            <TimePicker
+                android:id="@+id/set_short_at"
+                android:timePickerMode="spinner"
+                android:layout_width="match_parent"
+                android:layout_height="150sp"/>
+
+            <CheckBox
+                android:id="@+id/checkbox_enable_time_to_set_long"
+                android:layout_width="wrap_content"
+                android:layout_height="50sp"
+                android:textSize="18sp"
+                android:textColor="@color/card_foreground"
+                android:text="@string/explain_enable_time_to_set_long_time"/>
+            <TimePicker
+                android:id="@+id/set_long_at"
+                android:timePickerMode="spinner"
+                android:layout_width="match_parent"
+                android:layout_height="150sp"/>
+        </LinearLayout>
+
+    </androidx.cardview.widget.CardView>
+    <TextView
+        android:id="@+id/text_open_source_licenses"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/open_source_licenses"
+        android:textColor="@color/card_foreground"
+        android:textSize="16sp"
+        android:paddingTop="16dp"
+        android:clickable="true"
+        android:focusable="true" />
 
     <TextView
-        android:id="@+id/settingMinimumExplain"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:textSize="18sp"
-        android:text="@string/minimum_time" />
-
-    <EditText
-        android:id="@+id/editMinimumTime"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_below="@id/settingMinimumExplain"
-        android:ems="10"
-        android:hint="@string/default_minimum_sec"
-        android:textSize="18sp"
-        android:inputType= "numberSigned"
-        android:labelFor="@id/settingMinimumExplain"
-        android:importantForAutofill="no" />
-
-    <TextView
-        android:id="@+id/settingMaximumExplain"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:textSize="18sp"
-        android:text="@string/maximum_time" />
-
-    <EditText
-        android:id="@+id/editMaximumTime"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:ems="10"
-        android:textSize="18sp"
-        android:hint="@string/default_maximum_sec"
-        android:inputType="numberSigned"
-        android:labelFor="@id/settingMaximumExplain"
-        android:importantForAutofill="no" />
-
-    <Button
-        android:id="@+id/applyButton"
+        android:id="@+id/text_privacy_policy"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="@string/settings_apply"
-        android:textSize="18sp" />
-
-
-    <CheckBox
-        android:id="@+id/checkbox_enable_time_to_set_short"
-        android:layout_marginTop="50sp"
-        android:layout_width="wrap_content"
-        android:layout_height="50sp"
-        android:textSize="18sp"
-        android:text="@string/explain_enable_time_to_set_short_time"/>
-    <TimePicker
-        android:id="@+id/set_short_at"
-        android:timePickerMode="spinner"
-        android:layout_width="400sp"
-        android:layout_height="150sp"/>
-
-    <CheckBox
-        android:id="@+id/checkbox_enable_time_to_set_long"
-        android:layout_width="wrap_content"
-        android:layout_height="50sp"
-        android:textSize="18sp"
-        android:text="@string/explain_enable_time_to_set_long_time"/>
-    <TimePicker
-        android:id="@+id/set_long_at"
-        android:timePickerMode="spinner"
-        android:layout_width="400sp"
-        android:layout_height="150sp"/>
-
-
-</LinearLayout>
+        android:text="@string/privacy_policy"
+        android:textColor="@color/card_foreground"
+        android:textSize="16sp"
+        android:paddingTop="8dp"
+        android:autoLink="web"
+        android:linksClickable="true" />
+    </LinearLayout>
+</ScrollView>

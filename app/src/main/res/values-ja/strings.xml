@@ -8,7 +8,7 @@
     <string name="action_share">Share</string>
     <string name="action_reply">Reply</string>
     <string name="explainToSetSystemPermission">バックライトの点灯時間を変更するために\n次の画面で "Light Time Switcher" の Modify system settings を allow に設定してください。\nその後通知設定の許可ダイアログが表示されます。\nこれを許可すると画面上部の通知エリアに現在のバックライト点灯時間が表示されるようになります。</string>
-    <string name="go_systempermission">OK</string>
+    <string name="go_systempermission">設定画面へ移動</string>
     <string name="FirstStepToSetSystemSetteings">(1) "OK" をクリックする</string>
     <string name="SecondStepToSetSystemSettings">(1) \"Allow modifying system settings\" の 右にあるスイッチをONにする</string>
     <string name="ThirdStepToSetSystemSettings">(2) 左上にある \"←\" をクリックしてもどる</string>
@@ -25,4 +25,15 @@
     <string name="set_mini_max">最小: %1$d秒\n最大: %2$d秒</string>
     <string name="explain_enable_time_to_set_short_time">選択した時刻に短い点灯時間を設定する</string>
     <string name="explain_enable_time_to_set_long_time">選択した時刻に長い点灯時間を設定する</string>
+    <string name="enable_schedule_func">スケジュール機能を有効にする</string>
+    <string name="cancel_button">キャンセル</string>
+    <string name="move_button">移動する</string>
+    <string name="schedule_enable_title">スケジュール機能の有効化</string>
+    <string name="explain_schedule_enable_dialog">この機能を使うには、正確なアラーム許可が必要です。\n\n「アラームとリマインダー」の設定画面が開きますので、\n一覧から「Light Time Switcher」を選び、許可をONにしてください。</string>
+    <string name="enable_schedule">スケジュール機能を有効にしました。</string>
+    <string name="disable_schedule">スケジュール機能を無効にしました。</string>
+    <string name="toast_enable_short">短い点灯時間のスケジュールを有効にしました</string>
+    <string name="toast_disable_short">短い点灯時間のスケジュールを無効にしました</string>
+    <string name="toast_enable_long">長い点灯時間のスケジュールを有効にしました</string>
+    <string name="toast_disable_long">長い点灯時間のスケジュールを無効にしました</string>
 </resources>
