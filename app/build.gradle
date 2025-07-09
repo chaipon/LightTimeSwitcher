@@ -1,6 +1,7 @@
 plugins {
     id 'com.android.application'
 }
+apply plugin: 'com.google.android.gms.oss-licenses-plugin'
 
 android {
     signingConfigs {
@@ -26,7 +27,11 @@ android {
         }
     }
     namespace 'jp.superwooo.chaipon.lighttimeswitcher'
-
+    sourceSets {
+        main {
+            assets.srcDirs += "$buildDir/generated/assets/oss_licenses/release"
+        }
+    }
 }
 
 dependencies {
@@ -56,6 +61,31 @@ dependencies {
     implementation "androidx.fragment:fragment-ktx:$fragment_version"
     //noinspection GradleDependency
     debugImplementation "androidx.fragment:fragment-testing:$fragment_version"
+    implementation 'com.google.android.gms:play-services-oss-licenses:17.1.0'
 }
+
+tasks.register("fixLineEndings") {
+    doLast {
+        def file = file("$buildDir/generated/third_party_licenses/release/res/raw/third_party_licenses")
+        if (file.exists()) {
+            def content = file.getText('UTF-8').replaceAll('\r\n', '\n')
+            file.write(content, 'UTF-8')
+        }
+    }
+}
+afterEvaluate {
+    tasks.named("mergeReleaseResources").configure {
+        dependsOn("releaseOssLicensesTask")
+    }
+
+    tasks.named("fixLineEndings").configure {
+        mustRunAfter("releaseOssLicensesTask")
+    }
+    tasks.named("mergeReleaseResources").configure {
+        dependsOn("fixLineEndings")
+    }
+
+}
+
 
 

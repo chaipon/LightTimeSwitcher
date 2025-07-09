@@ -36,4 +36,6 @@
     <string name="toast_disable_short">Short lighting time schedule has been turned off.</string>
     <string name="toast_enable_long">Long lighting time schedule is now active.</string>
     <string name="toast_disable_long">Long lighting time schedule has been turned off.</string>
+    <string name="open_source_licenses" translatable="false">Open Source Licenses</string>
+    <string name="privacy_policy" translatable="false">Privacy Policy</string>
 </resources>
