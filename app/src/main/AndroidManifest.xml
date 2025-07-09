@@ -4,6 +4,7 @@
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.WRITE_SETTINGS" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
 
     <application
         android:allowBackup="true"
@@ -23,9 +24,17 @@
             <meta-data android:name="android.app.shortcuts"
                        android:resource="@xml/shortcuts" />
         </activity>
-        <activity android:name="jp.superwooo.chaipon.lighttimeswitcher.SettingsActivity" />
+        <activity
+            android:name="jp.superwooo.chaipon.lighttimeswitcher.SettingsActivity"
+            android:theme="@style/Theme.AppCompat"/>
+        <activity
+            android:name="com.google.android.gms.oss.licenses.OssLicensesMenuActivity"
+            android:theme="@style/Theme.AppCompat.Light.NoActionBar" />
+        <activity
+            android:name="com.google.android.gms.oss.licenses.OssLicensesActivity"
+            android:theme="@style/Theme.AppCompat.Light.NoActionBar" />
         <receiver android:name=".TimeoutReceiver" android:exported="true" />
-        <receiver android:name=".BOOTReceiver" android:exported="true">
+        <receiver android:name=".BOOTReceiver" android:exported="true" android:enabled="true">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED"/>
             </intent-filter>

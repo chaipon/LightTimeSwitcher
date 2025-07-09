@@ -24,24 +24,26 @@ public class MainActivity extends AppCompatActivity {
     public static final Integer MaxTime = 30 * 60 * 1000;
     TimeDurationPreference mTimeDurationPreference;
     private TimeDurationValue mCurrentTimeoutDuration;
-    private StringBuilder mTimeOutMessage = new StringBuilder();
+    private final StringBuilder mTimeOutMessage = new StringBuilder();
     public StringBuilder getTimeoutMessage(){
         return mTimeOutMessage;
     }
-    ActivityResultLauncher mRequestPermissionLauncher = registerForActivityResult(new ActivityResultContracts.RequestPermission(), isGranted ->{
-        switchTimeOutByUser();
-    });
-    ActivityResultLauncher mStartLauncher = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result ->{
-        if(Settings.System.canWrite(getApplicationContext()))
-            mRequestPermissionLauncher.launch("android.permission.POST_NOTIFICATIONS");
-        else
-            showExplainToSetSystemSettings();
-    });
+    ActivityResultLauncher<String> mRequestPermissionLauncher;
+    ActivityResultLauncher<Intent> mStartLauncher;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         Log.d("LS", "Main activity start");
         super.onCreate(savedInstanceState);
+        mRequestPermissionLauncher = registerForActivityResult(new ActivityResultContracts.RequestPermission(), isGranted ->{
+            switchTimeOutByUser();
+        });
+        mStartLauncher = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result ->{
+            if(Settings.System.canWrite(getApplicationContext()))
+                mRequestPermissionLauncher.launch("android.permission.POST_NOTIFICATIONS");
+            else
+                showExplainToSetSystemSettings();
+        });
         mTimeDurationPreference = new TimeDurationPreference(getApplicationContext());
 
         setCurrentTimeout();
@@ -55,7 +57,7 @@ public class MainActivity extends AppCompatActivity {
 
 
     private void showExplainToSetSystemSettings() {
-        makeText(getApplicationContext(), "Please set system permission.", LENGTH_SHORT).show();
+        makeText(this, "Please set system permission.", LENGTH_SHORT).show();
     }
 
     private void switchTimeOutByUser(){
@@ -99,7 +101,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void showTimeOutMessageToToast() {
-        makeText(getApplicationContext(), mTimeOutMessage.toString(), LENGTH_SHORT).show();
+        makeText(this, mTimeOutMessage.toString(), LENGTH_SHORT).show();
     }
 
     public void goToSystemSettings(View view) {
