@@ -118,5 +118,26 @@
         </LinearLayout>
 
     </androidx.cardview.widget.CardView>
+    <TextView
+        android:id="@+id/text_open_source_licenses"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/open_source_licenses"
+        android:textColor="@color/card_foreground"
+        android:textSize="16sp"
+        android:paddingTop="16dp"
+        android:clickable="true"
+        android:focusable="true" />
+
+    <TextView
+        android:id="@+id/text_privacy_policy"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/privacy_policy"
+        android:textColor="@color/card_foreground"
+        android:textSize="16sp"
+        android:paddingTop="8dp"
+        android:autoLink="web"
+        android:linksClickable="true" />
     </LinearLayout>
 </ScrollView>
