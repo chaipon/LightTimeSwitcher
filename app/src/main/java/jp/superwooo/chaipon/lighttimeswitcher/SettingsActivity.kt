@@ -75,7 +75,8 @@ class SettingsActivity : AppCompatActivity() {
             val shortLongTimes = ShortLongTimes(shortDuration, longDuration, LimitTime)
             minimumText.setText(shortLongTimes.shortDuration.sec().toString())
             maximumText.setText(shortLongTimes.longDuration.sec().toString())
-            timeDurationPreference.save(shortLongTimes)
+            val message = timeDurationPreference.save(shortLongTimes)
+            Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
         }
         shortTimeSwitch.setOnClickListener(View.OnClickListener { _: View? ->
             if (shortTimeSwitch.isChecked) {

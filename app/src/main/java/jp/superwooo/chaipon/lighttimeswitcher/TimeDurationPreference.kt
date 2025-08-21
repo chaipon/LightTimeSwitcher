@@ -2,7 +2,6 @@ package jp.superwooo.chaipon.lighttimeswitcher
 
 import android.content.Context
 import android.util.Log
-import android.widget.Toast
 import androidx.preference.PreferenceManager
 
 class TimeDurationPreference(private val context: Context?) {
@@ -35,7 +34,7 @@ class TimeDurationPreference(private val context: Context?) {
         else DurationType.Short
     }
 
-    fun save(shortLongTimes: ShortLongTimes) {
+    fun save(shortLongTimes: ShortLongTimes) : String {
         val preferences = PreferenceManager.getDefaultSharedPreferences(
             context!!
         )
@@ -47,8 +46,7 @@ class TimeDurationPreference(private val context: Context?) {
         e.apply()
         Log.d("LS", "save minimum: $minimum")
         Log.d("LS", "save maximum: $maximum")
-        val message = context.getString(R.string.set_mini_max, minimum, maximum)
-        Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+        return context.getString(R.string.set_mini_max, minimum, maximum)
     }
 
     companion object {

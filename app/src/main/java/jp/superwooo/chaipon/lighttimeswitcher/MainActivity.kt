@@ -5,6 +5,7 @@ import android.net.Uri
 import android.os.Bundle
 import android.provider.Settings
 import android.util.Log
+import android.view.View
 import android.widget.Toast
 import androidx.activity.result.ActivityResult
 import androidx.activity.result.ActivityResultLauncher
@@ -96,7 +97,7 @@ class MainActivity : AppCompatActivity() {
         Toast.makeText(this, timeoutMessage.toString(), Toast.LENGTH_SHORT).show()
     }
 
-    fun goToSystemSettings() {
+    fun goToSystemSettings(view: View) {
         val permissionIntent = Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS)
         permissionIntent.setData(Uri.parse("package:" + applicationContext.packageName))
         startLauncher!!.launch(permissionIntent)
@@ -111,4 +112,5 @@ class MainActivity : AppCompatActivity() {
         const val MIN_TIME: Int = 15 * 1000
         const val MAX_TIME: Int = 30 * 60 * 1000
     }
+
 }
