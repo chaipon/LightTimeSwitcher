@@ -8,7 +8,7 @@ import jp.superwooo.chaipon.lighttimeswitcher.AlarmScheduler.scheduleAll
 
 class TimeoutReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
-        val durationTypeName = intent.getStringExtra(AlarmScheduler.DurationTypeKey)
+        val durationTypeName = intent.getStringExtra(AlarmScheduler.DURATION_TYPE_KEY)
         Log.d("LS", "Time out receive: $durationTypeName")
         var durationService: DurationService?
         try {

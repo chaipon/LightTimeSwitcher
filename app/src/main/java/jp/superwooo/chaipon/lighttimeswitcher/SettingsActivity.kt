@@ -1,7 +1,6 @@
 package jp.superwooo.chaipon.lighttimeswitcher
 
 import android.app.AlarmManager
-import android.content.Context
 import android.content.DialogInterface
 import android.content.Intent
 import android.net.Uri
@@ -29,14 +28,14 @@ import jp.superwooo.chaipon.lighttimeswitcher.AlarmScheduler.scheduleTimeout
 import java.time.LocalTime
 
 class SettingsActivity : AppCompatActivity() {
-    private val mTimeDurationPreference: TimeDurationPreference by lazy{TimeDurationPreference(applicationContext)}
-    private val mScheduleSwitch: CheckBox by lazy {findViewById(R.id.checkbox_enable_schedule_func)}
-    private val mShortTimeSwitch: CheckBox by lazy {findViewById(R.id.checkbox_enable_time_to_set_short)}
-    private val mLongTimeSwitch: CheckBox by lazy {findViewById(R.id.checkbox_enable_time_to_set_long)}
-    private val mShortTimePicker: TimePicker by lazy{findViewById(R.id.set_short_at)}
-    private val mLongTimePicker: TimePicker by lazy{findViewById(R.id.set_long_at)}
-    private val mAlarmManager: AlarmManager by lazy{getSystemService(ALARM_SERVICE) as AlarmManager}
-    private val mSchedulePermissionLauncher =
+    private val timeDurationPreference: TimeDurationPreference by lazy{TimeDurationPreference(applicationContext)}
+    private val scheduleSwitch: CheckBox by lazy {findViewById(R.id.checkbox_enable_schedule_func)}
+    private val shortTimeSwitch: CheckBox by lazy {findViewById(R.id.checkbox_enable_time_to_set_short)}
+    private val longTimeSwitch: CheckBox by lazy {findViewById(R.id.checkbox_enable_time_to_set_long)}
+    private val shortTimePicker: TimePicker by lazy{findViewById(R.id.set_short_at)}
+    private val longTimePicker: TimePicker by lazy{findViewById(R.id.set_long_at)}
+    private val alarmManager: AlarmManager by lazy{getSystemService(ALARM_SERVICE) as AlarmManager}
+    private val schedulePermissionLauncher =
         registerForActivityResult<Intent, ActivityResult>(ActivityResultContracts.StartActivityForResult()) {_: ActivityResult? ->
             if (canScheduleExactAlarms()) {
                 setScheduleSwitch(true)
@@ -68,7 +67,7 @@ class SettingsActivity : AppCompatActivity() {
 
         LoadSettings()
 
-        findViewById<View>(R.id.applyButton).setOnClickListener { v: View? ->
+        findViewById<View>(R.id.applyButton).setOnClickListener { _: View? ->
             val minimumText = findViewById<EditText>(R.id.editMinimumTime)
             val maximumText = findViewById<EditText>(R.id.editMaximumTime)
             val shortDuration = parseInt(minimumText.text.toString(), loadCurrentMinimum())
@@ -76,10 +75,10 @@ class SettingsActivity : AppCompatActivity() {
             val shortLongTimes = ShortLongTimes(shortDuration, longDuration, LimitTime)
             minimumText.setText(shortLongTimes.shortDuration.sec().toString())
             maximumText.setText(shortLongTimes.longDuration.sec().toString())
-            mTimeDurationPreference.save(shortLongTimes)
+            timeDurationPreference.save(shortLongTimes)
         }
-        mShortTimeSwitch.setOnClickListener(View.OnClickListener { v: View? ->
-            if (mShortTimeSwitch.isChecked) {
+        shortTimeSwitch.setOnClickListener(View.OnClickListener { _: View? ->
+            if (shortTimeSwitch.isChecked) {
                 enableTime(DurationType.Short, R.id.set_short_at, EnableTimeShortKeyPref)
                 Toast.makeText(this, R.string.toast_enable_short, Toast.LENGTH_SHORT).show()
             } else {
@@ -87,8 +86,8 @@ class SettingsActivity : AppCompatActivity() {
                 Toast.makeText(this, R.string.toast_disable_short, Toast.LENGTH_SHORT).show()
             }
         })
-        mLongTimeSwitch.setOnClickListener(View.OnClickListener { v: View? ->
-            if (mLongTimeSwitch.isChecked) {
+        longTimeSwitch.setOnClickListener(View.OnClickListener { _: View? ->
+            if (longTimeSwitch.isChecked) {
                 enableTime(DurationType.Long, R.id.set_long_at, EnableTimeLongKeyPref)
                 Toast.makeText(this, R.string.toast_enable_long, Toast.LENGTH_SHORT).show()
             } else {
@@ -96,9 +95,9 @@ class SettingsActivity : AppCompatActivity() {
                 Toast.makeText(this, R.string.toast_disable_long, Toast.LENGTH_SHORT).show()
             }
         })
-        mScheduleSwitch.setOnClickListener(View.OnClickListener setOnClickListener@{ _: View? ->
+        scheduleSwitch.setOnClickListener(View.OnClickListener setOnClickListener@{ _: View? ->
             Log.d("LS", "click schedule check box")
-            setScheduleSwitch(mScheduleSwitch.isChecked)
+            setScheduleSwitch(scheduleSwitch.isChecked)
             if (requireAlarmPermission()) {
                 Log.d("LS", "show permission dialog by click")
                 showPermissionDialog()
@@ -129,30 +128,30 @@ class SettingsActivity : AppCompatActivity() {
         AlertDialog.Builder(this)
             .setTitle(R.string.schedule_enable_title)
             .setMessage(R.string.explain_schedule_enable_dialog)
-            .setPositiveButton(R.string.move_button) { dialog: DialogInterface?, which: Int ->
+            .setPositiveButton(R.string.move_button) { _: DialogInterface?, _: Int ->
                 val intent = Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM)
-                mSchedulePermissionLauncher.launch(intent)
+                schedulePermissionLauncher.launch(intent)
             }
-            .setNegativeButton(R.string.cancel_button) { dialog: DialogInterface?, which: Int ->
+            .setNegativeButton(R.string.cancel_button) { _: DialogInterface?, _: Int ->
                 setScheduleSwitch(false)
             }
             .show()
     }
 
     private fun setScheduleSwitch(enabled: Boolean) {
-        mScheduleSwitch.isChecked = enabled
+        scheduleSwitch.isChecked = enabled
         SchedulePreference.Companion.create(applicationContext).save(enabled)
     }
 
     private fun updateScheduleUIState() {
         Log.d("LS", "updateScheduleUIState")
-        val scheduleEnabled = mScheduleSwitch.isChecked
+        val scheduleEnabled = scheduleSwitch.isChecked
 
-        mShortTimeSwitch.isEnabled = scheduleEnabled
-        mLongTimeSwitch.isEnabled = scheduleEnabled
+        shortTimeSwitch.isEnabled = scheduleEnabled
+        longTimeSwitch.isEnabled = scheduleEnabled
 
-        mShortTimePicker.isEnabled = scheduleEnabled && !mShortTimeSwitch.isChecked
-        mLongTimePicker.isEnabled = scheduleEnabled && !mLongTimeSwitch.isChecked
+        shortTimePicker.isEnabled = scheduleEnabled && !shortTimeSwitch.isChecked
+        longTimePicker.isEnabled = scheduleEnabled && !longTimeSwitch.isChecked
 
         try {
             if (scheduleEnabled) scheduleAll(applicationContext)
@@ -189,22 +188,22 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private fun requireAlarmPermission(): Boolean {
-        if (!mScheduleSwitch.isChecked) return false
+        if (!scheduleSwitch.isChecked) return false
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return false
-        return !mAlarmManager.canScheduleExactAlarms()
+        return !alarmManager.canScheduleExactAlarms()
     }
 
     private fun canScheduleExactAlarms(): Boolean {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return true
-        return mAlarmManager.canScheduleExactAlarms()
+        return alarmManager.canScheduleExactAlarms()
     }
 
     private fun loadCurrentMinimum(): Int {
-        return mTimeDurationPreference.short.sec()
+        return timeDurationPreference.short.sec()
     }
 
     private fun loadCurrentMaximum(): Int {
-        return mTimeDurationPreference.long.sec()
+        return timeDurationPreference.long.sec()
     }
 
     private fun LoadSettings() {
@@ -218,7 +217,7 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private fun loadScheduleSwitch() {
-        mScheduleSwitch.isChecked =
+        scheduleSwitch.isChecked =
             SchedulePreference.Companion.create(applicationContext).isEnabled
     }
 
@@ -254,8 +253,8 @@ class SettingsActivity : AppCompatActivity() {
     private fun loadTimeDurationSettings() {
         val minimumText = findViewById<EditText>(R.id.editMinimumTime)
         val maximumText = findViewById<EditText>(R.id.editMaximumTime)
-        minimumText.setText(mTimeDurationPreference.short.sec().toString())
-        maximumText.setText(mTimeDurationPreference.long.sec().toString())
+        minimumText.setText(timeDurationPreference.short.sec().toString())
+        maximumText.setText(timeDurationPreference.long.sec().toString())
     }
 
 

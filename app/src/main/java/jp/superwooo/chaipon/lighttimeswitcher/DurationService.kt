@@ -3,24 +3,24 @@ package jp.superwooo.chaipon.lighttimeswitcher
 import android.content.Context
 import android.util.Log
 
-class DurationService(private val mContext: Context, durationType: DurationType) {
-    private var mDurationType = DurationType.Short
+class DurationService(private val context: Context, durationType: DurationType) {
+    private var durationType = DurationType.Short
 
     init {
-        mDurationType = durationType
+        this.durationType = durationType
     }
 
     fun setTimeOut() {
         val currentDuration: TimeDurationValue =
-            SystemScreenOffTimeoutAccessor.Companion.create(mContext).read()
-        val preference = TimeDurationPreference(mContext)
-        val settingDuration = preference.getDurationValue(mDurationType)
+            SystemScreenOffTimeoutAccessor.Companion.create(context).read()
+        val preference = TimeDurationPreference(context)
+        val settingDuration = preference.getDurationValue(durationType)
         if (currentDuration == settingDuration) return
         Log.d("LS", "set time out: " + settingDuration!!.sec())
-        SystemScreenOffTimeoutAccessor.Companion.create(mContext).write(settingDuration)
+        SystemScreenOffTimeoutAccessor.create(context).write(settingDuration)
 
         val notificationController =
-            NotificationController(mContext, mDurationType)
+            NotificationController(context, durationType)
         notificationController.notifyTimeOut()
     }
 }

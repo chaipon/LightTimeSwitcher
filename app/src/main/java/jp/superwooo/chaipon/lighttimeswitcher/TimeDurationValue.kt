@@ -1,31 +1,31 @@
 package jp.superwooo.chaipon.lighttimeswitcher
 
 class TimeDurationValue(second: Int, limit: LimitTime) {
-    private val mMilliSecond: Int
-    private val mSecond = limit.apply(second)
+    private val milliSecond: Int
+    private val second = limit.apply(second)
 
     init {
-        mMilliSecond = mSecond * 1000
+        milliSecond = this.second * 1000
     }
 
-    override fun equals(value: Any?): Boolean {
-        if (this === value) return true
-        if (value == null || javaClass != value.javaClass) return false
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other == null || javaClass != other.javaClass) return false
 
-        val other = value as TimeDurationValue
-        return mSecond == other.mSecond
+        val otherValue = other as TimeDurationValue
+        return second == otherValue.second
     }
 
     override fun hashCode(): Int {
-        return Integer.hashCode(mSecond)
+        return Integer.hashCode(second)
     }
 
 
     fun sec(): Int {
-        return mSecond
+        return second
     }
 
     fun milliSecond(): Int {
-        return mMilliSecond
+        return milliSecond
     }
 }

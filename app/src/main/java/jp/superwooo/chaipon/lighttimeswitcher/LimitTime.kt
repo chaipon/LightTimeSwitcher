@@ -3,8 +3,8 @@ package jp.superwooo.chaipon.lighttimeswitcher
 import kotlin.math.max
 import kotlin.math.min
 
-class LimitTime(private val _min: Int, private val _max: Int) {
+class LimitTime(private val min: Int, private val max: Int) {
     fun apply(value: Int): Int {
-        return max(_min.toDouble(), min(_max.toDouble(), value.toDouble())).toInt()
+        return max(min.toDouble(), min(max.toDouble(), value.toDouble())).toInt()
     }
 }

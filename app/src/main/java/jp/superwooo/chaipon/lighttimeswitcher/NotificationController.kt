@@ -12,19 +12,19 @@ import androidx.core.app.NotificationCompat
 /**
  * Created by Minoru on 2016/11/06.
  */
-class NotificationController(var mContext: Context, var mDurationType: DurationType?) {
-    var mCurrentDurationValue: TimeDurationValue?
+class NotificationController(var context: Context, var durationType: DurationType?) {
+    private var currentDurationValue: TimeDurationValue?
 
     init {
-        val timeDurationPreference = TimeDurationPreference(mContext)
-        mCurrentDurationValue = timeDurationPreference.getDurationValue(mDurationType)
+        val timeDurationPreference = TimeDurationPreference(context)
+        currentDurationValue = timeDurationPreference.getDurationValue(durationType)
     }
 
     private fun createNotificationChannel(): NotificationManager {
         // Create the NotificationChannel, but only on API 26+ because
         // the NotificationChannel class is new and not in the support library
         val notificationManager =
-            mContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         val name: CharSequence = "LS"
         val description = "LS"
         val importance = NotificationManager.IMPORTANCE_LOW
@@ -41,7 +41,7 @@ class NotificationController(var mContext: Context, var mDurationType: DurationT
     fun notifyTimeOut() {
         val notificationManager = createNotificationChannel()
         val notificationBuilder =
-            NotificationCompat.Builder(mContext, CHANNEL_ID)
+            NotificationCompat.Builder(context, CHANNEL_ID)
         notificationBuilder.setCategory(NotificationCompat.CATEGORY_MESSAGE)
         setNotificationIcon(notificationBuilder)
         setNotificationText(notificationBuilder)
@@ -59,9 +59,9 @@ class NotificationController(var mContext: Context, var mDurationType: DurationT
 
     private fun setApplicationToPushNotification(notificationBuilder: NotificationCompat.Builder) {
         val pending = PendingIntent.getActivity(
-            mContext,
+            context,
             0,
-            Intent(mContext, MainActivity::class.java),
+            Intent(context, MainActivity::class.java),
             PendingIntent.FLAG_IMMUTABLE
         )
         notificationBuilder.setContentIntent(pending)
@@ -72,22 +72,22 @@ class NotificationController(var mContext: Context, var mDurationType: DurationT
     }
 
     private fun setNotificationText(notificationBuilder: NotificationCompat.Builder) {
-        notificationBuilder.setContentTitle(mContext.getString(R.string.lighting_time))
+        notificationBuilder.setContentTitle(context.getString(R.string.lighting_time))
         notificationBuilder.setContentText(timeoutMessage)
         notificationBuilder.setTicker(timeoutMessage)
     }
 
     private val timeoutMessage: StringBuilder
         get() = StringBuilder(
-            mContext.getString(
+            context.getString(
                 R.string.setting_message,
-                mCurrentDurationValue!!.sec()
+                currentDurationValue!!.sec()
             )
         )
 
 
     private fun setNotificationIcon(notificationBuilder: NotificationCompat.Builder) {
-        if (mDurationType === DurationType.Short) {
+        if (durationType === DurationType.Short) {
             Log.d("LS", "set icon short")
             notificationBuilder.setSmallIcon(R.drawable.ic_stat_light_time_short)
         } else {

@@ -11,7 +11,7 @@ import java.time.Duration
 import java.time.LocalTime
 
 object AlarmScheduler {
-    const val DurationTypeKey: String = "duration_type"
+    const val DURATION_TYPE_KEY: String = "duration_type"
     @SuppressLint("ScheduleExactAlarm")
     @JvmStatic
     fun scheduleTimeout(context: Context, type: DurationType, scheduleTime: LocalTime) {
@@ -76,9 +76,9 @@ object AlarmScheduler {
         if (enableShortTimePreference.isEnabled) cancel(context, DurationType.Short)
     }
 
-    fun buildPendingIntent(context: Context?, type: DurationType): PendingIntent {
+    private fun buildPendingIntent(context: Context?, type: DurationType): PendingIntent {
         val intent = Intent(context, TimeoutReceiver::class.java)
-        intent.putExtra(DurationTypeKey, type.name)
+        intent.putExtra(DURATION_TYPE_KEY, type.name)
         return PendingIntent.getBroadcast(
             context,
             type.ordinal,

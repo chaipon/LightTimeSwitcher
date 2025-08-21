@@ -4,17 +4,16 @@ import android.content.Context
 import android.util.Log
 import android.widget.Toast
 import androidx.preference.PreferenceManager
-import jp.superwooo.chaipon.lighttimeswitcher.LimitTime
 
-class TimeDurationPreference(private val mContext: Context?) {
+class TimeDurationPreference(private val context: Context?) {
     private val shortLongTimes: ShortLongTimes
 
     init {
         val preferences = PreferenceManager.getDefaultSharedPreferences(
-            mContext!!
+            context!!
         )
-        val shortSec = preferences.getInt(MinimumKey, MainActivity.Companion.MinTime / 1000)
-        val longSec = preferences.getInt(MaximumKey, MainActivity.Companion.MaxTime / 1000)
+        val shortSec = preferences.getInt(MINIMUM_KEY, MainActivity.Companion.MIN_TIME / 1000)
+        val longSec = preferences.getInt(MAXIMUM_KEY, MainActivity.Companion.MAX_TIME / 1000)
         shortLongTimes = ShortLongTimes(shortSec, longSec, SettingsActivity.Companion.LimitTime)
     }
 
@@ -38,22 +37,22 @@ class TimeDurationPreference(private val mContext: Context?) {
 
     fun save(shortLongTimes: ShortLongTimes) {
         val preferences = PreferenceManager.getDefaultSharedPreferences(
-            mContext!!
+            context!!
         )
         val e = preferences.edit()
         val minimum = shortLongTimes.shortDuration.sec()
         val maximum = shortLongTimes.longDuration.sec()
-        e.putInt(MinimumKey, minimum)
-        e.putInt(MaximumKey, maximum)
+        e.putInt(MINIMUM_KEY, minimum)
+        e.putInt(MAXIMUM_KEY, maximum)
         e.apply()
         Log.d("LS", "save minimum: $minimum")
         Log.d("LS", "save maximum: $maximum")
-        val message = mContext.getString(R.string.set_mini_max, minimum, maximum)
-        Toast.makeText(mContext, message, Toast.LENGTH_SHORT).show()
+        val message = context.getString(R.string.set_mini_max, minimum, maximum)
+        Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
     }
 
     companion object {
-        private const val MinimumKey = "minimumTime"
-        private const val MaximumKey = "maximumTime"
+        private const val MINIMUM_KEY = "minimumTime"
+        private const val MAXIMUM_KEY = "maximumTime"
     }
 }
