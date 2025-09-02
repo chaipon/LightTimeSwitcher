@@ -4,13 +4,11 @@ import android.content.Context
 import android.util.Log
 import androidx.preference.PreferenceManager
 
-class TimeDurationPreference(private val context: Context?) {
+class TimeDurationPreference(private val context: Context) {
     private val shortLongTimes: ShortLongTimes
 
     init {
-        val preferences = PreferenceManager.getDefaultSharedPreferences(
-            context!!
-        )
+        val preferences = PreferenceManager.getDefaultSharedPreferences(context)
         val shortSec = preferences.getInt(MINIMUM_KEY, MainActivity.Companion.MIN_TIME / 1000)
         val longSec = preferences.getInt(MAXIMUM_KEY, MainActivity.Companion.MAX_TIME / 1000)
         shortLongTimes = ShortLongTimes(shortSec, longSec, SettingsActivity.Companion.LimitTime)
@@ -21,11 +19,10 @@ class TimeDurationPreference(private val context: Context?) {
     val long: TimeDurationValue
         get() = shortLongTimes.longDuration
 
-    fun getDurationValue(type: DurationType?): TimeDurationValue? {
+    fun getDurationValue(type: DurationType): TimeDurationValue {
         return when (type) {
             DurationType.Long -> shortLongTimes.longDuration
             DurationType.Short -> shortLongTimes.shortDuration
-            else -> throw IllegalArgumentException("Unexpected type:$type")
         }
     }
 
@@ -36,7 +33,7 @@ class TimeDurationPreference(private val context: Context?) {
 
     fun save(shortLongTimes: ShortLongTimes) : String {
         val preferences = PreferenceManager.getDefaultSharedPreferences(
-            context!!
+            context
         )
         val e = preferences.edit()
         val minimum = shortLongTimes.shortDuration.sec()

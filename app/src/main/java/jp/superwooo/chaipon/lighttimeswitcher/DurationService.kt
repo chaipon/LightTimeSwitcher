@@ -11,7 +11,7 @@ class DurationService(private val context: Context, private val durationType: Du
         val preference = TimeDurationPreference(context)
         val settingDuration = preference.getDurationValue(durationType)
         if (currentDuration == settingDuration) return
-        Log.d("LS", "set time out: " + settingDuration!!.sec())
+        Log.d("LS", "set time out: " + settingDuration.sec())
         SystemScreenOffTimeoutAccessor.create(context).write(settingDuration)
 
         val notificationController =

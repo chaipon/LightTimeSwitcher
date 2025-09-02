@@ -97,6 +97,7 @@ class MainActivity : AppCompatActivity() {
         Toast.makeText(this, timeoutMessage.toString(), Toast.LENGTH_SHORT).show()
     }
 
+    @Suppress("UNUSED_PARAMETER")
     fun goToSystemSettings(view: View) {
         val permissionIntent = Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS)
         permissionIntent.setData(Uri.parse("package:" + applicationContext.packageName))

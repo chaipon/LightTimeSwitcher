@@ -12,8 +12,8 @@ import androidx.core.app.NotificationCompat
 /**
  * Created by Minoru on 2016/11/06.
  */
-class NotificationController(var context: Context, var durationType: DurationType?) {
-    private var currentDurationValue: TimeDurationValue?
+class NotificationController(private val context: Context, private val durationType: DurationType) {
+    private val currentDurationValue: TimeDurationValue?
 
     init {
         val timeDurationPreference = TimeDurationPreference(context)

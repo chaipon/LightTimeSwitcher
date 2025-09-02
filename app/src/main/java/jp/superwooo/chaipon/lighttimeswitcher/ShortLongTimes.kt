@@ -5,7 +5,7 @@ class ShortLongTimes(requestedShortTime: Int, requestedLongTime: Int, limit: Lim
     val longDuration: TimeDurationValue
 
     init {
-        var adjustedShortTime = minOf(requestedShortTime, requestedLongTime)
+        val adjustedShortTime = minOf(requestedShortTime, requestedLongTime)
         shortDuration = TimeDurationValue(adjustedShortTime, limit)
         longDuration = TimeDurationValue(requestedLongTime, limit)
     }
