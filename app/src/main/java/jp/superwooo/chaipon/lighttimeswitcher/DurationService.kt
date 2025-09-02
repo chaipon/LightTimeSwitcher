@@ -3,12 +3,7 @@ package jp.superwooo.chaipon.lighttimeswitcher
 import android.content.Context
 import android.util.Log
 
-class DurationService(private val context: Context, durationType: DurationType) {
-    private var durationType = DurationType.Short
-
-    init {
-        this.durationType = durationType
-    }
+class DurationService(private val context: Context, private val durationType: DurationType) {
 
     fun setTimeOut() {
         val currentDuration: TimeDurationValue =
