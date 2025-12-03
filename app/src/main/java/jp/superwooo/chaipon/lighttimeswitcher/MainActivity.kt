@@ -46,7 +46,7 @@ class MainActivity : AppCompatActivity() {
 
 
     private fun showExplainToSetSystemSettings() {
-        Toast.makeText(this, "Please set system permission.", Toast.LENGTH_SHORT).show()
+        Toast.makeText(this, R.string.explain_system_permission, Toast.LENGTH_SHORT).show()
     }
 
     private fun switchTimeOutByUser() {

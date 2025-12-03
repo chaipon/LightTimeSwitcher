@@ -38,4 +38,5 @@
     <string name="toast_disable_long">Long lighting time schedule has been turned off.</string>
     <string name="open_source_licenses" translatable="false">Open Source Licenses</string>
     <string name="privacy_policy" translatable="false">Privacy Policy</string>
+    <string name="explain_system_permission">Please set system permission to set screen timeout.</string>
 </resources>

@@ -36,4 +36,5 @@
     <string name="toast_disable_short">短い点灯時間のスケジュールを無効にしました</string>
     <string name="toast_enable_long">長い点灯時間のスケジュールを有効にしました</string>
     <string name="toast_disable_long">長い点灯時間のスケジュールを無効にしました</string>
+    <string name="explain_system_permission">スクリーンタイムアウトを設定するために、システム設定の変更を許可してください。</string>
 </resources>
