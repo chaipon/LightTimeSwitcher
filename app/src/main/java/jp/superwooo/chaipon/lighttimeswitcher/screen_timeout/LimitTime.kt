@@ -1,4 +1,4 @@
-package jp.superwooo.chaipon.lighttimeswitcher
+package jp.superwooo.chaipon.lighttimeswitcher.screen_timeout
 
 import kotlin.math.max
 import kotlin.math.min

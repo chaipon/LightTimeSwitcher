@@ -1,4 +1,4 @@
-package jp.superwooo.chaipon.lighttimeswitcher
+package jp.superwooo.chaipon.lighttimeswitcher.screen_timeout
 
 class TimeDurationValue(second: Int, limit: LimitTime) {
     private val milliSecond: Int

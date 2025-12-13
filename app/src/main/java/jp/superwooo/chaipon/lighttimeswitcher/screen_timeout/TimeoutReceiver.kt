@@ -1,10 +1,10 @@
-package jp.superwooo.chaipon.lighttimeswitcher
+package jp.superwooo.chaipon.lighttimeswitcher.screen_timeout
 
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.util.Log
-import jp.superwooo.chaipon.lighttimeswitcher.AlarmScheduler.scheduleAll
+import jp.superwooo.chaipon.lighttimeswitcher.schedule.AlarmScheduler
 
 class TimeoutReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
@@ -20,6 +20,6 @@ class TimeoutReceiver : BroadcastReceiver() {
                 DurationType.Short.create(context.applicationContext)
         }
         durationService!!.setTimeOut()
-        scheduleAll(context.applicationContext)
+        AlarmScheduler.scheduleAll(context.applicationContext)
     }
 }

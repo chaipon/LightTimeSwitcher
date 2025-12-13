@@ -1,4 +1,4 @@
-package jp.superwooo.chaipon.lighttimeswitcher
+package jp.superwooo.chaipon.lighttimeswitcher.schedule
 
 import android.content.Context
 import android.content.SharedPreferences

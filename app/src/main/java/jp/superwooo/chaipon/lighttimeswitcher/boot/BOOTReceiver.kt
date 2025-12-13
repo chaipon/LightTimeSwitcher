@@ -1,10 +1,11 @@
-package jp.superwooo.chaipon.lighttimeswitcher
+package jp.superwooo.chaipon.lighttimeswitcher.boot
 
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.util.Log
-import jp.superwooo.chaipon.lighttimeswitcher.AlarmScheduler.scheduleAll
+import jp.superwooo.chaipon.lighttimeswitcher.schedule.AlarmScheduler
+import jp.superwooo.chaipon.lighttimeswitcher.schedule.SchedulePreference
 
 class BOOTReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
@@ -12,7 +13,8 @@ class BOOTReceiver : BroadcastReceiver() {
         Log.d("LS", "BOOTReceiver triggered with action: $action")
         if (Intent.ACTION_BOOT_COMPLETED == action) {
             try {
-                if (SchedulePreference.Companion.create(context).isEnabled) scheduleAll(context)
+                if (SchedulePreference.create(context).isEnabled)
+                    AlarmScheduler.scheduleAll(context)
             } catch (e: SecurityException) {
                 Log.e("LS", "scheduling error because of security error")
             }

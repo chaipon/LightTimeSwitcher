@@ -1,4 +1,4 @@
-package jp.superwooo.chaipon.lighttimeswitcher
+package jp.superwooo.chaipon.lighttimeswitcher.schedule
 
 import android.content.Context
 import android.content.SharedPreferences
@@ -8,6 +8,7 @@ class SchedulePreference private constructor(private val context: Context) {
     private val preference: SharedPreferences =
         PreferenceManager.getDefaultSharedPreferences(context.applicationContext)
     private val key = "enabledSchedule"
+
     fun save(enabled: Boolean) {
         val e = preference.edit()
         e.putBoolean(key, enabled)

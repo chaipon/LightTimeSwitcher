@@ -1,4 +1,4 @@
-package jp.superwooo.chaipon.lighttimeswitcher
+package jp.superwooo.chaipon.lighttimeswitcher.ui
 
 import android.content.Intent
 import android.net.Uri
@@ -8,26 +8,35 @@ import android.util.Log
 import android.view.View
 import android.widget.Toast
 import androidx.activity.result.ActivityResult
-import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import jp.superwooo.chaipon.lighttimeswitcher.R
+import jp.superwooo.chaipon.lighttimeswitcher.notification.NotificationController
+import jp.superwooo.chaipon.lighttimeswitcher.screen_timeout.SystemScreenOffTimeoutAccessor
+import jp.superwooo.chaipon.lighttimeswitcher.screen_timeout.TimeDurationPreference
+import jp.superwooo.chaipon.lighttimeswitcher.screen_timeout.TimeDurationValue
 
 class MainActivity : AppCompatActivity() {
-    private val timeDurationPreference: TimeDurationPreference by lazy { TimeDurationPreference(applicationContext)}
+    private val timeDurationPreference: TimeDurationPreference by lazy {
+        TimeDurationPreference(
+            applicationContext
+        )
+    }
     private var currentTimeoutDuration: TimeDurationValue? = null
     private val timeoutMessage: StringBuilder = StringBuilder()
     private var requestPermissionLauncher =
         registerForActivityResult<String, Boolean>(
-            ActivityResultContracts.RequestPermission()) { isGranted: Boolean ->
+            ActivityResultContracts.RequestPermission()
+        ) { isGranted: Boolean ->
             if(isGranted)
                 switchTimeOutByUser()
             else
                 Toast.makeText(this, R.string.explain_system_permission, Toast.LENGTH_LONG).show()
-                finish()
+            finish()
         }
     private var startLauncher =
         registerForActivityResult<Intent, ActivityResult>(ActivityResultContracts.StartActivityForResult()) { _: ActivityResult? ->
-            if (Settings.System.canWrite( applicationContext))
+            if (Settings.System.canWrite(applicationContext))
                 requestPermissionLauncher.launch("android.permission.POST_NOTIFICATIONS")
             else
                 showExplainToSetSystemSettings()
@@ -68,7 +77,7 @@ class MainActivity : AppCompatActivity() {
         if (currentTimeoutDuration == settingDuration) return
 
         Log.d("LS", "set time out: " + settingDuration.sec())
-        SystemScreenOffTimeoutAccessor.Companion.create(applicationContext).write(settingDuration)
+        SystemScreenOffTimeoutAccessor.create(applicationContext).write(settingDuration)
         currentTimeoutDuration = settingDuration
     }
 
@@ -104,7 +113,7 @@ class MainActivity : AppCompatActivity() {
     fun goToSystemSettings(view: View) {
         val permissionIntent = Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS)
         permissionIntent.setData(Uri.parse("package:" + applicationContext.packageName))
-        startLauncher!!.launch(permissionIntent)
+        startLauncher.launch(permissionIntent)
     }
 
     companion object {

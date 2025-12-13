@@ -1,4 +1,4 @@
-package jp.superwooo.chaipon.lighttimeswitcher
+package jp.superwooo.chaipon.lighttimeswitcher.screen_timeout
 
 class ShortLongTimes(requestedShortTime: Int, requestedLongTime: Int, limit: LimitTime) {
     val shortDuration: TimeDurationValue

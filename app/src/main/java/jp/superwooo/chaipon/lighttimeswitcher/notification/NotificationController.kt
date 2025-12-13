@@ -1,4 +1,4 @@
-package jp.superwooo.chaipon.lighttimeswitcher
+package jp.superwooo.chaipon.lighttimeswitcher.notification
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -7,7 +7,11 @@ import android.content.Context
 import android.content.Intent
 import android.util.Log
 import androidx.core.app.NotificationCompat
-
+import jp.superwooo.chaipon.lighttimeswitcher.R
+import jp.superwooo.chaipon.lighttimeswitcher.screen_timeout.DurationType
+import jp.superwooo.chaipon.lighttimeswitcher.screen_timeout.TimeDurationPreference
+import jp.superwooo.chaipon.lighttimeswitcher.screen_timeout.TimeDurationValue
+import jp.superwooo.chaipon.lighttimeswitcher.ui.MainActivity
 
 /**
  * Created by Minoru on 2016/11/06.

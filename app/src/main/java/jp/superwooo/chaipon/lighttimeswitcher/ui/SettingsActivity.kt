@@ -1,4 +1,4 @@
-package jp.superwooo.chaipon.lighttimeswitcher
+package jp.superwooo.chaipon.lighttimeswitcher.ui
 
 import android.app.AlarmManager
 import android.content.DialogInterface
@@ -21,22 +21,30 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import com.google.android.gms.oss.licenses.OssLicensesMenuActivity
-import jp.superwooo.chaipon.lighttimeswitcher.AlarmScheduler.cancel
-import jp.superwooo.chaipon.lighttimeswitcher.AlarmScheduler.cancelAll
-import jp.superwooo.chaipon.lighttimeswitcher.AlarmScheduler.scheduleAll
-import jp.superwooo.chaipon.lighttimeswitcher.AlarmScheduler.scheduleTimeout
+import jp.superwooo.chaipon.lighttimeswitcher.R
+import jp.superwooo.chaipon.lighttimeswitcher.schedule.AlarmScheduler
+import jp.superwooo.chaipon.lighttimeswitcher.schedule.EnableTimePreference
+import jp.superwooo.chaipon.lighttimeswitcher.schedule.SchedulePreference
+import jp.superwooo.chaipon.lighttimeswitcher.screen_timeout.DurationType
+import jp.superwooo.chaipon.lighttimeswitcher.screen_timeout.LimitTime
+import jp.superwooo.chaipon.lighttimeswitcher.screen_timeout.ShortLongTimes
+import jp.superwooo.chaipon.lighttimeswitcher.screen_timeout.TimeDurationPreference
 import java.time.LocalTime
 
 class SettingsActivity : AppCompatActivity() {
-    private val timeDurationPreference: TimeDurationPreference by lazy{TimeDurationPreference(applicationContext)}
+    private val timeDurationPreference: TimeDurationPreference by lazy{
+        TimeDurationPreference(
+            applicationContext
+        )
+    }
     private val scheduleSwitch: CheckBox by lazy {findViewById(R.id.checkbox_enable_schedule_func)}
     private val shortTimeSwitch: CheckBox by lazy {findViewById(R.id.checkbox_enable_time_to_set_short)}
     private val longTimeSwitch: CheckBox by lazy {findViewById(R.id.checkbox_enable_time_to_set_long)}
     private val shortTimePicker: TimePicker by lazy{findViewById(R.id.set_short_at)}
     private val longTimePicker: TimePicker by lazy{findViewById(R.id.set_long_at)}
-    private val alarmManager: AlarmManager by lazy{getSystemService(ALARM_SERVICE) as AlarmManager}
+    private val alarmManager: AlarmManager by lazy{getSystemService(ALARM_SERVICE) as AlarmManager }
     private val schedulePermissionLauncher =
-        registerForActivityResult<Intent, ActivityResult>(ActivityResultContracts.StartActivityForResult()) {_: ActivityResult? ->
+        registerForActivityResult<Intent, ActivityResult>(ActivityResultContracts.StartActivityForResult()) { _: ActivityResult? ->
             if (canScheduleExactAlarms()) {
                 setScheduleSwitch(true)
                 Toast.makeText(this, R.string.enable_schedule, Toast.LENGTH_SHORT).show()
@@ -54,7 +62,7 @@ class SettingsActivity : AppCompatActivity() {
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         if (item.itemId == R.id.action_close_settings) {
-            finish() // 設定画面を閉じる
+            finish()
             return true
         }
         return super.onOptionsItemSelected(item)
@@ -141,7 +149,7 @@ class SettingsActivity : AppCompatActivity() {
 
     private fun setScheduleSwitch(enabled: Boolean) {
         scheduleSwitch.isChecked = enabled
-        SchedulePreference.Companion.create(applicationContext).save(enabled)
+        SchedulePreference.create(applicationContext).save(enabled)
     }
 
     private fun updateScheduleUIState() {
@@ -155,8 +163,8 @@ class SettingsActivity : AppCompatActivity() {
         longTimePicker.isEnabled = scheduleEnabled && !longTimeSwitch.isChecked
 
         try {
-            if (scheduleEnabled) scheduleAll(applicationContext)
-            else cancelAll(applicationContext)
+            if (scheduleEnabled) AlarmScheduler.scheduleAll(applicationContext)
+            else AlarmScheduler.cancelAll(applicationContext)
         } catch (e: SecurityException) {
             if (requireAlarmPermission()) {
                 Log.d("LS", "show permission dialog by exception")
@@ -168,16 +176,16 @@ class SettingsActivity : AppCompatActivity() {
     private fun disableTime(durationType: DurationType, viewId: Int, prefKey: String) {
         val timePicker = findViewById<TimePicker>(viewId)
         timePicker.isEnabled = true
-        cancel(applicationContext, durationType)
-        EnableTimePreference.Companion.create(applicationContext, prefKey).save(false)
+        AlarmScheduler.cancel(applicationContext, durationType)
+        EnableTimePreference.create(applicationContext, prefKey).save(false)
     }
 
     private fun enableTime(type: DurationType, viewId: Int, prefKey: String) {
         val timePicker = findViewById<TimePicker>(viewId)
         timePicker.isEnabled = false
         val targetTime = LocalTime.of(timePicker.hour, timePicker.minute)
-        scheduleTimeout(applicationContext, type, targetTime)
-        EnableTimePreference.Companion.create(applicationContext, prefKey).save(targetTime, true)
+        AlarmScheduler.scheduleTimeout(applicationContext, type, targetTime)
+        EnableTimePreference.create(applicationContext, prefKey).save(targetTime, true)
     }
 
     private fun parseInt(inputText: String, defaultTime: Int): Int {
@@ -219,12 +227,12 @@ class SettingsActivity : AppCompatActivity() {
 
     private fun loadScheduleSwitch() {
         scheduleSwitch.isChecked =
-            SchedulePreference.Companion.create(applicationContext).isEnabled
+            SchedulePreference.create(applicationContext).isEnabled
     }
 
     private fun loadEnableTimeSettings(prefixKey: String, checkBoxId: Int, timePickerId: Int) {
         val enableTimePreference: EnableTimePreference =
-            EnableTimePreference.Companion.create(applicationContext, prefixKey)
+            EnableTimePreference.create(applicationContext, prefixKey)
 
         val checkBox = findViewById<CheckBox>(checkBoxId)
         checkBox.isChecked = enableTimePreference.isEnabled

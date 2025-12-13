@@ -1,4 +1,4 @@
-package jp.superwooo.chaipon.lighttimeswitcher
+package jp.superwooo.chaipon.lighttimeswitcher.schedule
 
 import android.annotation.SuppressLint
 import android.app.AlarmManager
@@ -7,11 +7,15 @@ import android.content.Context
 import android.content.Intent
 import android.os.SystemClock
 import android.util.Log
+import jp.superwooo.chaipon.lighttimeswitcher.screen_timeout.DurationType
+import jp.superwooo.chaipon.lighttimeswitcher.screen_timeout.TimeoutReceiver
+import jp.superwooo.chaipon.lighttimeswitcher.ui.SettingsActivity
 import java.time.Duration
 import java.time.LocalTime
 
 object AlarmScheduler {
     const val DURATION_TYPE_KEY: String = "duration_type"
+
     @SuppressLint("ScheduleExactAlarm")
     @JvmStatic
     fun scheduleTimeout(context: Context, type: DurationType, scheduleTime: LocalTime) {

@@ -1,17 +1,20 @@
-package jp.superwooo.chaipon.lighttimeswitcher
+package jp.superwooo.chaipon.lighttimeswitcher.screen_timeout
 
 import android.content.Context
 import android.util.Log
 import androidx.preference.PreferenceManager
+import jp.superwooo.chaipon.lighttimeswitcher.R
+import jp.superwooo.chaipon.lighttimeswitcher.ui.MainActivity
+import jp.superwooo.chaipon.lighttimeswitcher.ui.SettingsActivity
 
 class TimeDurationPreference(private val context: Context) {
     private val shortLongTimes: ShortLongTimes
 
     init {
         val preferences = PreferenceManager.getDefaultSharedPreferences(context)
-        val shortSec = preferences.getInt(MINIMUM_KEY, MainActivity.Companion.MIN_TIME / 1000)
-        val longSec = preferences.getInt(MAXIMUM_KEY, MainActivity.Companion.MAX_TIME / 1000)
-        shortLongTimes = ShortLongTimes(shortSec, longSec, SettingsActivity.Companion.LimitTime)
+        val shortSec = preferences.getInt(MINIMUM_KEY, MainActivity.MIN_TIME / 1000)
+        val longSec = preferences.getInt(MAXIMUM_KEY, MainActivity.MAX_TIME / 1000)
+        shortLongTimes = ShortLongTimes(shortSec, longSec, SettingsActivity.LimitTime)
     }
 
     val short: TimeDurationValue

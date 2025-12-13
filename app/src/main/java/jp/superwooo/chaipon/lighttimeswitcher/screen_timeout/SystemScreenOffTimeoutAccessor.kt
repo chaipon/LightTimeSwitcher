@@ -1,18 +1,18 @@
-package jp.superwooo.chaipon.lighttimeswitcher
+package jp.superwooo.chaipon.lighttimeswitcher.screen_timeout
 
 import android.content.Context
 import android.provider.Settings
-import android.provider.Settings.SettingNotFoundException
+import jp.superwooo.chaipon.lighttimeswitcher.ui.SettingsActivity
 
 class SystemScreenOffTimeoutAccessor private constructor(private val context: Context) {
     fun read(): TimeDurationValue {
         val cr = context.contentResolver
         try {
             val timeOut = Settings.System.getInt(cr, Settings.System.SCREEN_OFF_TIMEOUT) / 1000
-            return TimeDurationValue(timeOut, SettingsActivity.Companion.LimitTime)
-        } catch (e: SettingNotFoundException) {
+            return TimeDurationValue(timeOut, SettingsActivity.LimitTime)
+        } catch (e: Settings.SettingNotFoundException) {
             e.printStackTrace()
-            return TimeDurationValue(15, SettingsActivity.Companion.LimitTime)
+            return TimeDurationValue(15, SettingsActivity.LimitTime)
         }
     }
 
