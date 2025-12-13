@@ -6,14 +6,14 @@ import androidx.preference.PreferenceManager
 import java.time.LocalTime
 
 class EnableTimePreference private constructor(
-    private val context: Context?,
+    private val context: Context,
     private val keyPrefix: String
 ) {
     private val hourKey = keyPrefix + "hour"
     private val minuteKey = keyPrefix + "minute"
     private val enabledKey = keyPrefix + "enabled"
     private val preference: SharedPreferences =
-        PreferenceManager.getDefaultSharedPreferences(context!!.applicationContext)
+        PreferenceManager.getDefaultSharedPreferences(context.applicationContext)
 
     fun save(time: LocalTime, enabled: Boolean) {
         val e = preference.edit()
@@ -39,7 +39,7 @@ class EnableTimePreference private constructor(
         get() = preference.getBoolean(enabledKey, false)
 
     companion object {
-        fun create(context: Context?, keyPrefix: String): EnableTimePreference {
+        fun create(context: Context, keyPrefix: String): EnableTimePreference {
             return EnableTimePreference(context, keyPrefix)
         }
     }

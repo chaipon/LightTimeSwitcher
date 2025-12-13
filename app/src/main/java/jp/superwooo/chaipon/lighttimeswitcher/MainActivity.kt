@@ -16,25 +16,26 @@ class MainActivity : AppCompatActivity() {
     private val timeDurationPreference: TimeDurationPreference by lazy { TimeDurationPreference(applicationContext)}
     private var currentTimeoutDuration: TimeDurationValue? = null
     private val timeoutMessage: StringBuilder = StringBuilder()
-    private var requestPermissionLauncher: ActivityResultLauncher<String>? = null
-    private var startLauncher: ActivityResultLauncher<Intent>? = null
+    private var requestPermissionLauncher =
+        registerForActivityResult<String, Boolean>(
+            ActivityResultContracts.RequestPermission()) { isGranted: Boolean ->
+            if(isGranted)
+                switchTimeOutByUser()
+            else
+                Toast.makeText(this, R.string.explain_system_permission, Toast.LENGTH_LONG).show()
+                finish()
+        }
+    private var startLauncher =
+        registerForActivityResult<Intent, ActivityResult>(ActivityResultContracts.StartActivityForResult()) { _: ActivityResult? ->
+            if (Settings.System.canWrite( applicationContext))
+                requestPermissionLauncher.launch("android.permission.POST_NOTIFICATIONS")
+            else
+                showExplainToSetSystemSettings()
+        }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         Log.d("LS", "Main activity start")
         super.onCreate(savedInstanceState)
-        requestPermissionLauncher =
-            registerForActivityResult<String, Boolean>(ActivityResultContracts.RequestPermission()) { _: Boolean? ->
-                switchTimeOutByUser()
-            }
-        startLauncher =
-            registerForActivityResult<Intent, ActivityResult>(ActivityResultContracts.StartActivityForResult()) { _: ActivityResult? ->
-                if (Settings.System.canWrite(
-                        applicationContext
-                    )
-                ) requestPermissionLauncher!!.launch("android.permission.POST_NOTIFICATIONS")
-                else showExplainToSetSystemSettings()
-            }
-
         setCurrentTimeout()
         if (Settings.System.canWrite(applicationContext)) {
             switchTimeOutByUser()
@@ -59,12 +60,14 @@ class MainActivity : AppCompatActivity() {
 
     private fun setCurrentTimeout() {
         currentTimeoutDuration =
-            SystemScreenOffTimeoutAccessor.Companion.create(applicationContext).read()
+            SystemScreenOffTimeoutAccessor.create(applicationContext).read()
     }
 
     private fun setTimeOut(settingDuration: TimeDurationValue?) {
+        if(settingDuration == null) return
         if (currentTimeoutDuration == settingDuration) return
-        Log.d("LS", "set time out: " + settingDuration!!.sec())
+
+        Log.d("LS", "set time out: " + settingDuration.sec())
         SystemScreenOffTimeoutAccessor.Companion.create(applicationContext).write(settingDuration)
         currentTimeoutDuration = settingDuration
     }
@@ -105,11 +108,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     companion object {
-        /**
-         * ATTENTION: This was auto-generated to implement the App Indexing API.
-         * See [...](https://g.co/AppIndexing/AndroidStudio) for more information.
-         */
-        //private GoogleApiClient client;
         const val MIN_TIME: Int = 15 * 1000
         const val MAX_TIME: Int = 30 * 60 * 1000
     }

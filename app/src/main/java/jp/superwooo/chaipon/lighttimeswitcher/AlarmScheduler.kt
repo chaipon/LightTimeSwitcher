@@ -76,7 +76,7 @@ object AlarmScheduler {
         if (enableShortTimePreference.isEnabled) cancel(context, DurationType.Short)
     }
 
-    private fun buildPendingIntent(context: Context?, type: DurationType): PendingIntent {
+    private fun buildPendingIntent(context: Context, type: DurationType): PendingIntent {
         val intent = Intent(context, TimeoutReceiver::class.java)
         intent.putExtra(DURATION_TYPE_KEY, type.name)
         return PendingIntent.getBroadcast(
