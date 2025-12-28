@@ -22,7 +22,7 @@ class MainActivity : AppCompatActivity() {
             applicationContext
         )
     }
-    private var currentTimeoutDuration: TimeDurationValue? = null
+    private lateinit var currentTimeoutDuration: TimeDurationValue
     private val timeoutMessage: StringBuilder = StringBuilder()
     private var requestPermissionLauncher =
         registerForActivityResult<String, Boolean>(
@@ -72,8 +72,7 @@ class MainActivity : AppCompatActivity() {
             SystemScreenOffTimeoutAccessor.create(applicationContext).read()
     }
 
-    private fun setTimeOut(settingDuration: TimeDurationValue?) {
-        if(settingDuration == null) return
+    private fun setTimeOut(settingDuration: TimeDurationValue) {
         if (currentTimeoutDuration == settingDuration) return
 
         Log.d("LS", "set time out: " + settingDuration.sec())
@@ -81,7 +80,7 @@ class MainActivity : AppCompatActivity() {
         currentTimeoutDuration = settingDuration
     }
 
-    private val switchedTimeDurationValue: TimeDurationValue?
+    private val switchedTimeDurationValue: TimeDurationValue
         get() {
             if (currentTimeoutDuration == timeDurationPreference.short) {
                 Log.d("LS", "set to max")

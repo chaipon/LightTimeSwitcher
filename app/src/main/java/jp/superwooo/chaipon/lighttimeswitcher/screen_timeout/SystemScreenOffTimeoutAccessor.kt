@@ -16,11 +16,11 @@ class SystemScreenOffTimeoutAccessor private constructor(private val context: Co
         }
     }
 
-    fun write(timeout: TimeDurationValue?) {
+    fun write(timeout: TimeDurationValue) {
         Settings.System.putInt(
             context.contentResolver,
             Settings.System.SCREEN_OFF_TIMEOUT,
-            timeout!!.milliSecond()
+            timeout.milliSecond()
         )
     }
 
