@@ -101,7 +101,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun makeTimeOutMessage() {
-        timeoutMessage.append(getString(R.string.setting_message, currentTimeoutDuration!!.sec()))
+        timeoutMessage.append(getString(R.string.setting_message, currentTimeoutDuration.sec()))
     }
 
     private fun showTimeOutMessageToToast() {

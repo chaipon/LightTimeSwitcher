@@ -17,12 +17,8 @@ import jp.superwooo.chaipon.lighttimeswitcher.ui.MainActivity
  * Created by Minoru on 2016/11/06.
  */
 class NotificationController(private val context: Context, private val durationType: DurationType) {
-    private val currentDurationValue: TimeDurationValue?
-
-    init {
-        val timeDurationPreference = TimeDurationPreference(context)
-        currentDurationValue = timeDurationPreference.getDurationValue(durationType)
-    }
+    private val currentDurationValue: TimeDurationValue =
+        TimeDurationPreference(context).getDurationValue(durationType)
 
     private fun createNotificationChannel(): NotificationManager {
         // Create the NotificationChannel, but only on API 26+ because
@@ -85,7 +81,7 @@ class NotificationController(private val context: Context, private val durationT
         get() = StringBuilder(
             context.getString(
                 R.string.setting_message,
-                currentDurationValue!!.sec()
+                currentDurationValue.sec()
             )
         )
 
