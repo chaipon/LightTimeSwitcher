@@ -73,7 +73,7 @@ class SettingsActivity : AppCompatActivity() {
         Log.d("LS", "Start setting activities")
         setContentView(R.layout.activity_settings)
 
-        LoadSettings()
+        loadSettings()
 
         findViewById<View>(R.id.applyButton).setOnClickListener { _: View? ->
             val minimumText = findViewById<EditText>(R.id.editMinimumTime)
@@ -215,7 +215,7 @@ class SettingsActivity : AppCompatActivity() {
         return timeDurationPreference.long.sec()
     }
 
-    private fun LoadSettings() {
+    private fun loadSettings() {
         Log.d("LS", "start load settings.")
         loadTimeDurationSettings()
         loadEnableShortTimeSettings()
