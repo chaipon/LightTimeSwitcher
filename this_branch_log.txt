@@ -1,0 +1,3827 @@
+commit 16bb321d8ed430cb2e25cc42d81dd9342a132868
+Author: Minoru <mekun@be.to>
+Date:   Sun Dec 28 12:48:15 2025 +0900
+
+    refactor: Null許容型をなくし、Null安全性を向上
+    
+    - `currentTimeoutDuration` を`lateinit` に変更し、Nullの可能性を排除
+    - `setTimeOut` と `write` メソッドの引数を非Null許容型に変更
+    - これに伴い、不要なNullチェックと強制アンラップ(`!!`)を削除
+
+diff --git a/.idea/gradle.xml b/.idea/gradle.xml
+index 0897082..360b82e 100644
+--- a/.idea/gradle.xml
++++ b/.idea/gradle.xml
+@@ -4,6 +4,7 @@
+   <component name="GradleSettings">
+     <option name="linkedExternalProjectsSettings">
+       <GradleProjectSettings>
++        <option name="testRunner" value="GRADLE" />
+         <option name="externalProjectPath" value="$PROJECT_DIR$" />
+         <option name="gradleJvm" value="#GRADLE_LOCAL_JAVA_HOME" />
+         <option name="modules">
+diff --git a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/screen_timeout/SystemScreenOffTimeoutAccessor.kt b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/screen_timeout/SystemScreenOffTimeoutAccessor.kt
+index d2264d7..d1ac9c5 100644
+--- a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/screen_timeout/SystemScreenOffTimeoutAccessor.kt
++++ b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/screen_timeout/SystemScreenOffTimeoutAccessor.kt
+@@ -16,11 +16,11 @@ class SystemScreenOffTimeoutAccessor private constructor(private val context: Co
+         }
+     }
+ 
+-    fun write(timeout: TimeDurationValue?) {
++    fun write(timeout: TimeDurationValue) {
+         Settings.System.putInt(
+             context.contentResolver,
+             Settings.System.SCREEN_OFF_TIMEOUT,
+-            timeout!!.milliSecond()
++            timeout.milliSecond()
+         )
+     }
+ 
+diff --git a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/ui/MainActivity.kt b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/ui/MainActivity.kt
+index 97ae844..a35676f 100644
+--- a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/ui/MainActivity.kt
++++ b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/ui/MainActivity.kt
+@@ -22,7 +22,7 @@ class MainActivity : AppCompatActivity() {
+             applicationContext
+         )
+     }
+-    private var currentTimeoutDuration: TimeDurationValue? = null
++    private lateinit var currentTimeoutDuration: TimeDurationValue
+     private val timeoutMessage: StringBuilder = StringBuilder()
+     private var requestPermissionLauncher =
+         registerForActivityResult<String, Boolean>(
+@@ -72,8 +72,7 @@ class MainActivity : AppCompatActivity() {
+             SystemScreenOffTimeoutAccessor.create(applicationContext).read()
+     }
+ 
+-    private fun setTimeOut(settingDuration: TimeDurationValue?) {
+-        if(settingDuration == null) return
++    private fun setTimeOut(settingDuration: TimeDurationValue) {
+         if (currentTimeoutDuration == settingDuration) return
+ 
+         Log.d("LS", "set time out: " + settingDuration.sec())
+@@ -81,7 +80,7 @@ class MainActivity : AppCompatActivity() {
+         currentTimeoutDuration = settingDuration
+     }
+ 
+-    private val switchedTimeDurationValue: TimeDurationValue?
++    private val switchedTimeDurationValue: TimeDurationValue
+         get() {
+             if (currentTimeoutDuration == timeDurationPreference.short) {
+                 Log.d("LS", "set to max")
+
+commit 391767e119f914636d5560812ae3479d11e6938b
+Author: Minoru <mekun@be.to>
+Date:   Sun Dec 14 00:20:49 2025 +0900
+
+    パッケージを変更
+    
+    下記のクラス図にしたがって変更した。
+    
+    @startuml LightTimeSwitcher 機能ベース構成図（screen_timeout版）
+    
+    top to bottom direction
+    
+    package "ui" {
+        together {
+            class MainActivity
+            class SettingActivity
+        }
+    }
+    
+    package "screen_timeout" {
+        together {
+            class DurationService {
+                +apply(type: DurationType)
+            }
+            class TimeoutReceiver
+            enum DurationType
+            class TimeDurationValue
+            class ShortLongTimes
+            class TimeDurationPreference
+            class SystemScreenOffTimeoutAccessor
+        }
+    }
+    
+    package "schedule" {
+        together {
+            class AlarmScheduler <<static>>
+            class EnableTimePreference
+            class SchedulePreference
+        }
+    }
+    
+    package "notification" {
+        class NotificationController
+    }
+    
+    package "boot" {
+        class BootReceiver
+    }
+    
+    '== 接続 ==
+    MainActivity --> DurationService
+    MainActivity --> NotificationController
+    TimeoutReceiver --> DurationService
+    
+    DurationService --> NotificationController
+    DurationService --> SystemScreenOffTimeoutAccessor
+    DurationService --> DurationType
+    DurationService --> TimeDurationPreference
+    
+    NotificationController --> TimeDurationPreference
+    
+    SettingActivity --> EnableTimePreference
+    SettingActivity --> SchedulePreference
+    SettingActivity --> TimeDurationPreference
+    SettingActivity --> AlarmScheduler
+    
+    BootReceiver --> AlarmScheduler
+    BootReceiver --> SchedulePreference
+    AlarmScheduler --> EnableTimePreference
+    
+    TimeDurationPreference --> ShortLongTimes
+    TimeDurationPreference --> DurationType
+    ShortLongTimes "1" --> "2" TimeDurationValue
+    SystemScreenOffTimeoutAccessor ..> TimeDurationValue
+    
+    @enduml
+
+diff --git a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/BOOTReceiver.kt b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/boot/BOOTReceiver.kt
+similarity index 66%
+rename from app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/BOOTReceiver.kt
+rename to app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/boot/BOOTReceiver.kt
+index 361fe36..8c42e76 100644
+--- a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/BOOTReceiver.kt
++++ b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/boot/BOOTReceiver.kt
+@@ -1,10 +1,11 @@
+-package jp.superwooo.chaipon.lighttimeswitcher
++package jp.superwooo.chaipon.lighttimeswitcher.boot
+ 
+ import android.content.BroadcastReceiver
+ import android.content.Context
+ import android.content.Intent
+ import android.util.Log
+-import jp.superwooo.chaipon.lighttimeswitcher.AlarmScheduler.scheduleAll
++import jp.superwooo.chaipon.lighttimeswitcher.schedule.AlarmScheduler
++import jp.superwooo.chaipon.lighttimeswitcher.schedule.SchedulePreference
+ 
+ class BOOTReceiver : BroadcastReceiver() {
+     override fun onReceive(context: Context, intent: Intent) {
+@@ -12,7 +13,8 @@ class BOOTReceiver : BroadcastReceiver() {
+         Log.d("LS", "BOOTReceiver triggered with action: $action")
+         if (Intent.ACTION_BOOT_COMPLETED == action) {
+             try {
+-                if (SchedulePreference.Companion.create(context).isEnabled) scheduleAll(context)
++                if (SchedulePreference.create(context).isEnabled)
++                    AlarmScheduler.scheduleAll(context)
+             } catch (e: SecurityException) {
+                 Log.e("LS", "scheduling error because of security error")
+             }
+@@ -20,4 +22,4 @@ class BOOTReceiver : BroadcastReceiver() {
+             Log.d("LS", "BOOTReceiver ignored non-boot action: $action")
+         }
+     }
+-}
++}
+\ No newline at end of file
+diff --git a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/NotificationController.kt b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/notification/NotificationController.kt
+similarity index 89%
+rename from app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/NotificationController.kt
+rename to app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/notification/NotificationController.kt
+index 9ec8cb4..3f8b030 100644
+--- a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/NotificationController.kt
++++ b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/notification/NotificationController.kt
+@@ -1,4 +1,4 @@
+-package jp.superwooo.chaipon.lighttimeswitcher
++package jp.superwooo.chaipon.lighttimeswitcher.notification
+ 
+ import android.app.NotificationChannel
+ import android.app.NotificationManager
+@@ -7,7 +7,11 @@ import android.content.Context
+ import android.content.Intent
+ import android.util.Log
+ import androidx.core.app.NotificationCompat
+-
++import jp.superwooo.chaipon.lighttimeswitcher.R
++import jp.superwooo.chaipon.lighttimeswitcher.screen_timeout.DurationType
++import jp.superwooo.chaipon.lighttimeswitcher.screen_timeout.TimeDurationPreference
++import jp.superwooo.chaipon.lighttimeswitcher.screen_timeout.TimeDurationValue
++import jp.superwooo.chaipon.lighttimeswitcher.ui.MainActivity
+ 
+ /**
+  * Created by Minoru on 2016/11/06.
+@@ -99,4 +103,4 @@ class NotificationController(private val context: Context, private val durationT
+     companion object {
+         private const val CHANNEL_ID = "LightSwitcherNotification"
+     }
+-}
++}
+\ No newline at end of file
+diff --git a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/AlarmScheduler.kt b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/schedule/AlarmScheduler.kt
+similarity index 92%
+rename from app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/AlarmScheduler.kt
+rename to app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/schedule/AlarmScheduler.kt
+index 3217f9e..d96a9f0 100644
+--- a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/AlarmScheduler.kt
++++ b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/schedule/AlarmScheduler.kt
+@@ -1,4 +1,4 @@
+-package jp.superwooo.chaipon.lighttimeswitcher
++package jp.superwooo.chaipon.lighttimeswitcher.schedule
+ 
+ import android.annotation.SuppressLint
+ import android.app.AlarmManager
+@@ -7,11 +7,15 @@ import android.content.Context
+ import android.content.Intent
+ import android.os.SystemClock
+ import android.util.Log
++import jp.superwooo.chaipon.lighttimeswitcher.screen_timeout.DurationType
++import jp.superwooo.chaipon.lighttimeswitcher.screen_timeout.TimeoutReceiver
++import jp.superwooo.chaipon.lighttimeswitcher.ui.SettingsActivity
+ import java.time.Duration
+ import java.time.LocalTime
+ 
+ object AlarmScheduler {
+     const val DURATION_TYPE_KEY: String = "duration_type"
++
+     @SuppressLint("ScheduleExactAlarm")
+     @JvmStatic
+     fun scheduleTimeout(context: Context, type: DurationType, scheduleTime: LocalTime) {
+@@ -86,4 +90,4 @@ object AlarmScheduler {
+             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+         )
+     }
+-}
++}
+\ No newline at end of file
+diff --git a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/EnableTimePreference.kt b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/schedule/EnableTimePreference.kt
+similarity index 95%
+rename from app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/EnableTimePreference.kt
+rename to app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/schedule/EnableTimePreference.kt
+index c1dafe3..98c03a8 100644
+--- a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/EnableTimePreference.kt
++++ b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/schedule/EnableTimePreference.kt
+@@ -1,4 +1,4 @@
+-package jp.superwooo.chaipon.lighttimeswitcher
++package jp.superwooo.chaipon.lighttimeswitcher.schedule
+ 
+ import android.content.Context
+ import android.content.SharedPreferences
+@@ -43,4 +43,4 @@ class EnableTimePreference private constructor(
+             return EnableTimePreference(context, keyPrefix)
+         }
+     }
+-}
++}
+\ No newline at end of file
+diff --git a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/SchedulePreference.kt b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/schedule/SchedulePreference.kt
+similarity index 92%
+rename from app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/SchedulePreference.kt
+rename to app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/schedule/SchedulePreference.kt
+index 7136837..7cbde5d 100644
+--- a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/SchedulePreference.kt
++++ b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/schedule/SchedulePreference.kt
+@@ -1,4 +1,4 @@
+-package jp.superwooo.chaipon.lighttimeswitcher
++package jp.superwooo.chaipon.lighttimeswitcher.schedule
+ 
+ import android.content.Context
+ import android.content.SharedPreferences
+@@ -8,6 +8,7 @@ class SchedulePreference private constructor(private val context: Context) {
+     private val preference: SharedPreferences =
+         PreferenceManager.getDefaultSharedPreferences(context.applicationContext)
+     private val key = "enabledSchedule"
++
+     fun save(enabled: Boolean) {
+         val e = preference.edit()
+         e.putBoolean(key, enabled)
+@@ -22,4 +23,4 @@ class SchedulePreference private constructor(private val context: Context) {
+             return SchedulePreference(context)
+         }
+     }
+-}
++}
+\ No newline at end of file
+diff --git a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/DurationService.kt b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/screen_timeout/DurationService.kt
+similarity index 76%
+rename from app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/DurationService.kt
+rename to app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/screen_timeout/DurationService.kt
+index 7b4dbcf..277b7a5 100644
+--- a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/DurationService.kt
++++ b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/screen_timeout/DurationService.kt
+@@ -1,13 +1,14 @@
+-package jp.superwooo.chaipon.lighttimeswitcher
++package jp.superwooo.chaipon.lighttimeswitcher.screen_timeout
+ 
+ import android.content.Context
+ import android.util.Log
++import jp.superwooo.chaipon.lighttimeswitcher.notification.NotificationController
+ 
+ class DurationService(private val context: Context, private val durationType: DurationType) {
+ 
+     fun setTimeOut() {
+         val currentDuration: TimeDurationValue =
+-            SystemScreenOffTimeoutAccessor.Companion.create(context).read()
++            SystemScreenOffTimeoutAccessor.create(context).read()
+         val preference = TimeDurationPreference(context)
+         val settingDuration = preference.getDurationValue(durationType)
+         if (currentDuration == settingDuration) return
+@@ -18,4 +19,4 @@ class DurationService(private val context: Context, private val durationType: Du
+             NotificationController(context, durationType)
+         notificationController.notifyTimeOut()
+     }
+-}
++}
+\ No newline at end of file
+diff --git a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/DurationType.kt b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/screen_timeout/DurationType.kt
+similarity index 86%
+rename from app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/DurationType.kt
+rename to app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/screen_timeout/DurationType.kt
+index 6aa1bba..91e15df 100644
+--- a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/DurationType.kt
++++ b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/screen_timeout/DurationType.kt
+@@ -1,4 +1,4 @@
+-package jp.superwooo.chaipon.lighttimeswitcher
++package jp.superwooo.chaipon.lighttimeswitcher.screen_timeout
+ 
+ import android.content.Context
+ 
+@@ -15,4 +15,4 @@ enum class DurationType {
+     };
+ 
+     abstract fun create(context: Context): DurationService
+-}
++}
+\ No newline at end of file
+diff --git a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/LimitTime.kt b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/screen_timeout/LimitTime.kt
+similarity index 78%
+rename from app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/LimitTime.kt
+rename to app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/screen_timeout/LimitTime.kt
+index b883c51..f462955 100644
+--- a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/LimitTime.kt
++++ b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/screen_timeout/LimitTime.kt
+@@ -1,4 +1,4 @@
+-package jp.superwooo.chaipon.lighttimeswitcher
++package jp.superwooo.chaipon.lighttimeswitcher.screen_timeout
+ 
+ import kotlin.math.max
+ import kotlin.math.min
+@@ -7,4 +7,4 @@ class LimitTime(private val min: Int, private val max: Int) {
+     fun apply(value: Int): Int {
+         return max(min.toDouble(), min(max.toDouble(), value.toDouble())).toInt()
+     }
+-}
++}
+\ No newline at end of file
+diff --git a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/ShortLongTimes.kt b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/screen_timeout/ShortLongTimes.kt
+similarity index 86%
+rename from app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/ShortLongTimes.kt
+rename to app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/screen_timeout/ShortLongTimes.kt
+index 8516929..5f4499d 100644
+--- a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/ShortLongTimes.kt
++++ b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/screen_timeout/ShortLongTimes.kt
+@@ -1,4 +1,4 @@
+-package jp.superwooo.chaipon.lighttimeswitcher
++package jp.superwooo.chaipon.lighttimeswitcher.screen_timeout
+ 
+ class ShortLongTimes(requestedShortTime: Int, requestedLongTime: Int, limit: LimitTime) {
+     val shortDuration: TimeDurationValue
+@@ -9,4 +9,4 @@ class ShortLongTimes(requestedShortTime: Int, requestedLongTime: Int, limit: Lim
+         shortDuration = TimeDurationValue(adjustedShortTime, limit)
+         longDuration = TimeDurationValue(requestedLongTime, limit)
+     }
+-}
++}
+\ No newline at end of file
+diff --git a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/SystemScreenOffTimeoutAccessor.kt b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/screen_timeout/SystemScreenOffTimeoutAccessor.kt
+similarity index 70%
+rename from app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/SystemScreenOffTimeoutAccessor.kt
+rename to app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/screen_timeout/SystemScreenOffTimeoutAccessor.kt
+index fec81b9..d2264d7 100644
+--- a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/SystemScreenOffTimeoutAccessor.kt
++++ b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/screen_timeout/SystemScreenOffTimeoutAccessor.kt
+@@ -1,18 +1,18 @@
+-package jp.superwooo.chaipon.lighttimeswitcher
++package jp.superwooo.chaipon.lighttimeswitcher.screen_timeout
+ 
+ import android.content.Context
+ import android.provider.Settings
+-import android.provider.Settings.SettingNotFoundException
++import jp.superwooo.chaipon.lighttimeswitcher.ui.SettingsActivity
+ 
+ class SystemScreenOffTimeoutAccessor private constructor(private val context: Context) {
+     fun read(): TimeDurationValue {
+         val cr = context.contentResolver
+         try {
+             val timeOut = Settings.System.getInt(cr, Settings.System.SCREEN_OFF_TIMEOUT) / 1000
+-            return TimeDurationValue(timeOut, SettingsActivity.Companion.LimitTime)
+-        } catch (e: SettingNotFoundException) {
++            return TimeDurationValue(timeOut, SettingsActivity.LimitTime)
++        } catch (e: Settings.SettingNotFoundException) {
+             e.printStackTrace()
+-            return TimeDurationValue(15, SettingsActivity.Companion.LimitTime)
++            return TimeDurationValue(15, SettingsActivity.LimitTime)
+         }
+     }
+ 
+@@ -29,4 +29,4 @@ class SystemScreenOffTimeoutAccessor private constructor(private val context: Co
+             return SystemScreenOffTimeoutAccessor(context)
+         }
+     }
+-}
++}
+\ No newline at end of file
+diff --git a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/TimeDurationPreference.kt b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/screen_timeout/TimeDurationPreference.kt
+similarity index 85%
+rename from app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/TimeDurationPreference.kt
+rename to app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/screen_timeout/TimeDurationPreference.kt
+index 1528bdd..03a4e5c 100644
+--- a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/TimeDurationPreference.kt
++++ b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/screen_timeout/TimeDurationPreference.kt
+@@ -1,17 +1,20 @@
+-package jp.superwooo.chaipon.lighttimeswitcher
++package jp.superwooo.chaipon.lighttimeswitcher.screen_timeout
+ 
+ import android.content.Context
+ import android.util.Log
+ import androidx.preference.PreferenceManager
++import jp.superwooo.chaipon.lighttimeswitcher.R
++import jp.superwooo.chaipon.lighttimeswitcher.ui.MainActivity
++import jp.superwooo.chaipon.lighttimeswitcher.ui.SettingsActivity
+ 
+ class TimeDurationPreference(private val context: Context) {
+     private val shortLongTimes: ShortLongTimes
+ 
+     init {
+         val preferences = PreferenceManager.getDefaultSharedPreferences(context)
+-        val shortSec = preferences.getInt(MINIMUM_KEY, MainActivity.Companion.MIN_TIME / 1000)
+-        val longSec = preferences.getInt(MAXIMUM_KEY, MainActivity.Companion.MAX_TIME / 1000)
+-        shortLongTimes = ShortLongTimes(shortSec, longSec, SettingsActivity.Companion.LimitTime)
++        val shortSec = preferences.getInt(MINIMUM_KEY, MainActivity.MIN_TIME / 1000)
++        val longSec = preferences.getInt(MAXIMUM_KEY, MainActivity.MAX_TIME / 1000)
++        shortLongTimes = ShortLongTimes(shortSec, longSec, SettingsActivity.LimitTime)
+     }
+ 
+     val short: TimeDurationValue
+@@ -50,4 +53,4 @@ class TimeDurationPreference(private val context: Context) {
+         private const val MINIMUM_KEY = "minimumTime"
+         private const val MAXIMUM_KEY = "maximumTime"
+     }
+-}
++}
+\ No newline at end of file
+diff --git a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/TimeDurationValue.kt b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/screen_timeout/TimeDurationValue.kt
+similarity index 91%
+rename from app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/TimeDurationValue.kt
+rename to app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/screen_timeout/TimeDurationValue.kt
+index f978704..0f2a6b3 100644
+--- a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/TimeDurationValue.kt
++++ b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/screen_timeout/TimeDurationValue.kt
+@@ -1,4 +1,4 @@
+-package jp.superwooo.chaipon.lighttimeswitcher
++package jp.superwooo.chaipon.lighttimeswitcher.screen_timeout
+ 
+ class TimeDurationValue(second: Int, limit: LimitTime) {
+     private val milliSecond: Int
+@@ -28,4 +28,4 @@ class TimeDurationValue(second: Int, limit: LimitTime) {
+     fun milliSecond(): Int {
+         return milliSecond
+     }
+-}
++}
+\ No newline at end of file
+diff --git a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/TimeoutReceiver.kt b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/screen_timeout/TimeoutReceiver.kt
+similarity index 80%
+rename from app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/TimeoutReceiver.kt
+rename to app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/screen_timeout/TimeoutReceiver.kt
+index 37a5d92..465d519 100644
+--- a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/TimeoutReceiver.kt
++++ b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/screen_timeout/TimeoutReceiver.kt
+@@ -1,10 +1,10 @@
+-package jp.superwooo.chaipon.lighttimeswitcher
++package jp.superwooo.chaipon.lighttimeswitcher.screen_timeout
+ 
+ import android.content.BroadcastReceiver
+ import android.content.Context
+ import android.content.Intent
+ import android.util.Log
+-import jp.superwooo.chaipon.lighttimeswitcher.AlarmScheduler.scheduleAll
++import jp.superwooo.chaipon.lighttimeswitcher.schedule.AlarmScheduler
+ 
+ class TimeoutReceiver : BroadcastReceiver() {
+     override fun onReceive(context: Context, intent: Intent) {
+@@ -20,6 +20,6 @@ class TimeoutReceiver : BroadcastReceiver() {
+                 DurationType.Short.create(context.applicationContext)
+         }
+         durationService!!.setTimeOut()
+-        scheduleAll(context.applicationContext)
++        AlarmScheduler.scheduleAll(context.applicationContext)
+     }
+-}
++}
+\ No newline at end of file
+diff --git a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/MainActivity.kt b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/ui/MainActivity.kt
+similarity index 81%
+rename from app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/MainActivity.kt
+rename to app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/ui/MainActivity.kt
+index 67c32c0..97ae844 100644
+--- a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/MainActivity.kt
++++ b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/ui/MainActivity.kt
+@@ -1,4 +1,4 @@
+-package jp.superwooo.chaipon.lighttimeswitcher
++package jp.superwooo.chaipon.lighttimeswitcher.ui
+ 
+ import android.content.Intent
+ import android.net.Uri
+@@ -8,26 +8,35 @@ import android.util.Log
+ import android.view.View
+ import android.widget.Toast
+ import androidx.activity.result.ActivityResult
+-import androidx.activity.result.ActivityResultLauncher
+ import androidx.activity.result.contract.ActivityResultContracts
+ import androidx.appcompat.app.AppCompatActivity
++import jp.superwooo.chaipon.lighttimeswitcher.R
++import jp.superwooo.chaipon.lighttimeswitcher.notification.NotificationController
++import jp.superwooo.chaipon.lighttimeswitcher.screen_timeout.SystemScreenOffTimeoutAccessor
++import jp.superwooo.chaipon.lighttimeswitcher.screen_timeout.TimeDurationPreference
++import jp.superwooo.chaipon.lighttimeswitcher.screen_timeout.TimeDurationValue
+ 
+ class MainActivity : AppCompatActivity() {
+-    private val timeDurationPreference: TimeDurationPreference by lazy { TimeDurationPreference(applicationContext)}
++    private val timeDurationPreference: TimeDurationPreference by lazy {
++        TimeDurationPreference(
++            applicationContext
++        )
++    }
+     private var currentTimeoutDuration: TimeDurationValue? = null
+     private val timeoutMessage: StringBuilder = StringBuilder()
+     private var requestPermissionLauncher =
+         registerForActivityResult<String, Boolean>(
+-            ActivityResultContracts.RequestPermission()) { isGranted: Boolean ->
++            ActivityResultContracts.RequestPermission()
++        ) { isGranted: Boolean ->
+             if(isGranted)
+                 switchTimeOutByUser()
+             else
+                 Toast.makeText(this, R.string.explain_system_permission, Toast.LENGTH_LONG).show()
+-                finish()
++            finish()
+         }
+     private var startLauncher =
+         registerForActivityResult<Intent, ActivityResult>(ActivityResultContracts.StartActivityForResult()) { _: ActivityResult? ->
+-            if (Settings.System.canWrite( applicationContext))
++            if (Settings.System.canWrite(applicationContext))
+                 requestPermissionLauncher.launch("android.permission.POST_NOTIFICATIONS")
+             else
+                 showExplainToSetSystemSettings()
+@@ -68,7 +77,7 @@ class MainActivity : AppCompatActivity() {
+         if (currentTimeoutDuration == settingDuration) return
+ 
+         Log.d("LS", "set time out: " + settingDuration.sec())
+-        SystemScreenOffTimeoutAccessor.Companion.create(applicationContext).write(settingDuration)
++        SystemScreenOffTimeoutAccessor.create(applicationContext).write(settingDuration)
+         currentTimeoutDuration = settingDuration
+     }
+ 
+@@ -104,7 +113,7 @@ class MainActivity : AppCompatActivity() {
+     fun goToSystemSettings(view: View) {
+         val permissionIntent = Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS)
+         permissionIntent.setData(Uri.parse("package:" + applicationContext.packageName))
+-        startLauncher!!.launch(permissionIntent)
++        startLauncher.launch(permissionIntent)
+     }
+ 
+     companion object {
+@@ -112,4 +121,4 @@ class MainActivity : AppCompatActivity() {
+         const val MAX_TIME: Int = 30 * 60 * 1000
+     }
+ 
+-}
++}
+\ No newline at end of file
+diff --git a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/SettingsActivity.kt b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/ui/SettingsActivity.kt
+similarity index 87%
+rename from app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/SettingsActivity.kt
+rename to app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/ui/SettingsActivity.kt
+index 005ea32..a91f7af 100644
+--- a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/SettingsActivity.kt
++++ b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/ui/SettingsActivity.kt
+@@ -1,4 +1,4 @@
+-package jp.superwooo.chaipon.lighttimeswitcher
++package jp.superwooo.chaipon.lighttimeswitcher.ui
+ 
+ import android.app.AlarmManager
+ import android.content.DialogInterface
+@@ -21,22 +21,30 @@ import androidx.activity.result.contract.ActivityResultContracts
+ import androidx.appcompat.app.AlertDialog
+ import androidx.appcompat.app.AppCompatActivity
+ import com.google.android.gms.oss.licenses.OssLicensesMenuActivity
+-import jp.superwooo.chaipon.lighttimeswitcher.AlarmScheduler.cancel
+-import jp.superwooo.chaipon.lighttimeswitcher.AlarmScheduler.cancelAll
+-import jp.superwooo.chaipon.lighttimeswitcher.AlarmScheduler.scheduleAll
+-import jp.superwooo.chaipon.lighttimeswitcher.AlarmScheduler.scheduleTimeout
++import jp.superwooo.chaipon.lighttimeswitcher.R
++import jp.superwooo.chaipon.lighttimeswitcher.schedule.AlarmScheduler
++import jp.superwooo.chaipon.lighttimeswitcher.schedule.EnableTimePreference
++import jp.superwooo.chaipon.lighttimeswitcher.schedule.SchedulePreference
++import jp.superwooo.chaipon.lighttimeswitcher.screen_timeout.DurationType
++import jp.superwooo.chaipon.lighttimeswitcher.screen_timeout.LimitTime
++import jp.superwooo.chaipon.lighttimeswitcher.screen_timeout.ShortLongTimes
++import jp.superwooo.chaipon.lighttimeswitcher.screen_timeout.TimeDurationPreference
+ import java.time.LocalTime
+ 
+ class SettingsActivity : AppCompatActivity() {
+-    private val timeDurationPreference: TimeDurationPreference by lazy{TimeDurationPreference(applicationContext)}
++    private val timeDurationPreference: TimeDurationPreference by lazy{
++        TimeDurationPreference(
++            applicationContext
++        )
++    }
+     private val scheduleSwitch: CheckBox by lazy {findViewById(R.id.checkbox_enable_schedule_func)}
+     private val shortTimeSwitch: CheckBox by lazy {findViewById(R.id.checkbox_enable_time_to_set_short)}
+     private val longTimeSwitch: CheckBox by lazy {findViewById(R.id.checkbox_enable_time_to_set_long)}
+     private val shortTimePicker: TimePicker by lazy{findViewById(R.id.set_short_at)}
+     private val longTimePicker: TimePicker by lazy{findViewById(R.id.set_long_at)}
+-    private val alarmManager: AlarmManager by lazy{getSystemService(ALARM_SERVICE) as AlarmManager}
++    private val alarmManager: AlarmManager by lazy{getSystemService(ALARM_SERVICE) as AlarmManager }
+     private val schedulePermissionLauncher =
+-        registerForActivityResult<Intent, ActivityResult>(ActivityResultContracts.StartActivityForResult()) {_: ActivityResult? ->
++        registerForActivityResult<Intent, ActivityResult>(ActivityResultContracts.StartActivityForResult()) { _: ActivityResult? ->
+             if (canScheduleExactAlarms()) {
+                 setScheduleSwitch(true)
+                 Toast.makeText(this, R.string.enable_schedule, Toast.LENGTH_SHORT).show()
+@@ -54,7 +62,7 @@ class SettingsActivity : AppCompatActivity() {
+ 
+     override fun onOptionsItemSelected(item: MenuItem): Boolean {
+         if (item.itemId == R.id.action_close_settings) {
+-            finish() // 設定画面を閉じる
++            finish()
+             return true
+         }
+         return super.onOptionsItemSelected(item)
+@@ -141,7 +149,7 @@ class SettingsActivity : AppCompatActivity() {
+ 
+     private fun setScheduleSwitch(enabled: Boolean) {
+         scheduleSwitch.isChecked = enabled
+-        SchedulePreference.Companion.create(applicationContext).save(enabled)
++        SchedulePreference.create(applicationContext).save(enabled)
+     }
+ 
+     private fun updateScheduleUIState() {
+@@ -155,8 +163,8 @@ class SettingsActivity : AppCompatActivity() {
+         longTimePicker.isEnabled = scheduleEnabled && !longTimeSwitch.isChecked
+ 
+         try {
+-            if (scheduleEnabled) scheduleAll(applicationContext)
+-            else cancelAll(applicationContext)
++            if (scheduleEnabled) AlarmScheduler.scheduleAll(applicationContext)
++            else AlarmScheduler.cancelAll(applicationContext)
+         } catch (e: SecurityException) {
+             if (requireAlarmPermission()) {
+                 Log.d("LS", "show permission dialog by exception")
+@@ -168,16 +176,16 @@ class SettingsActivity : AppCompatActivity() {
+     private fun disableTime(durationType: DurationType, viewId: Int, prefKey: String) {
+         val timePicker = findViewById<TimePicker>(viewId)
+         timePicker.isEnabled = true
+-        cancel(applicationContext, durationType)
+-        EnableTimePreference.Companion.create(applicationContext, prefKey).save(false)
++        AlarmScheduler.cancel(applicationContext, durationType)
++        EnableTimePreference.create(applicationContext, prefKey).save(false)
+     }
+ 
+     private fun enableTime(type: DurationType, viewId: Int, prefKey: String) {
+         val timePicker = findViewById<TimePicker>(viewId)
+         timePicker.isEnabled = false
+         val targetTime = LocalTime.of(timePicker.hour, timePicker.minute)
+-        scheduleTimeout(applicationContext, type, targetTime)
+-        EnableTimePreference.Companion.create(applicationContext, prefKey).save(targetTime, true)
++        AlarmScheduler.scheduleTimeout(applicationContext, type, targetTime)
++        EnableTimePreference.create(applicationContext, prefKey).save(targetTime, true)
+     }
+ 
+     private fun parseInt(inputText: String, defaultTime: Int): Int {
+@@ -219,12 +227,12 @@ class SettingsActivity : AppCompatActivity() {
+ 
+     private fun loadScheduleSwitch() {
+         scheduleSwitch.isChecked =
+-            SchedulePreference.Companion.create(applicationContext).isEnabled
++            SchedulePreference.create(applicationContext).isEnabled
+     }
+ 
+     private fun loadEnableTimeSettings(prefixKey: String, checkBoxId: Int, timePickerId: Int) {
+         val enableTimePreference: EnableTimePreference =
+-            EnableTimePreference.Companion.create(applicationContext, prefixKey)
++            EnableTimePreference.create(applicationContext, prefixKey)
+ 
+         val checkBox = findViewById<CheckBox>(checkBoxId)
+         checkBox.isChecked = enableTimePreference.isEnabled
+@@ -266,4 +274,4 @@ class SettingsActivity : AppCompatActivity() {
+         const val EnableTimeShortKeyPref: String = "enable_time_short_"
+         const val EnableTimeLongKeyPref: String = "enable_time_long_"
+     }
+-}
++}
+\ No newline at end of file
+
+commit e36466503ff833e277838dc25dfb176b4a8ce02d
+Author: Minoru <mekun@be.to>
+Date:   Sat Dec 13 15:16:42 2025 +0900
+
+    コードの堅牢性を向上させるリファクタリング
+    
+    * ActivityResultLauncherをプロパティ初期化に変更
+    * ContextのNull許容型を非許容型に修正
+    * Nullチェックを追加し、NullPointerExceptionのリスクを低減
+    * 不要なApp Indexing API関連のコードを削除
+
+diff --git a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/AlarmScheduler.kt b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/AlarmScheduler.kt
+index b292101..3217f9e 100644
+--- a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/AlarmScheduler.kt
++++ b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/AlarmScheduler.kt
+@@ -76,7 +76,7 @@ object AlarmScheduler {
+         if (enableShortTimePreference.isEnabled) cancel(context, DurationType.Short)
+     }
+ 
+-    private fun buildPendingIntent(context: Context?, type: DurationType): PendingIntent {
++    private fun buildPendingIntent(context: Context, type: DurationType): PendingIntent {
+         val intent = Intent(context, TimeoutReceiver::class.java)
+         intent.putExtra(DURATION_TYPE_KEY, type.name)
+         return PendingIntent.getBroadcast(
+diff --git a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/EnableTimePreference.kt b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/EnableTimePreference.kt
+index 291f1cf..c1dafe3 100644
+--- a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/EnableTimePreference.kt
++++ b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/EnableTimePreference.kt
+@@ -6,14 +6,14 @@ import androidx.preference.PreferenceManager
+ import java.time.LocalTime
+ 
+ class EnableTimePreference private constructor(
+-    private val context: Context?,
++    private val context: Context,
+     private val keyPrefix: String
+ ) {
+     private val hourKey = keyPrefix + "hour"
+     private val minuteKey = keyPrefix + "minute"
+     private val enabledKey = keyPrefix + "enabled"
+     private val preference: SharedPreferences =
+-        PreferenceManager.getDefaultSharedPreferences(context!!.applicationContext)
++        PreferenceManager.getDefaultSharedPreferences(context.applicationContext)
+ 
+     fun save(time: LocalTime, enabled: Boolean) {
+         val e = preference.edit()
+@@ -39,7 +39,7 @@ class EnableTimePreference private constructor(
+         get() = preference.getBoolean(enabledKey, false)
+ 
+     companion object {
+-        fun create(context: Context?, keyPrefix: String): EnableTimePreference {
++        fun create(context: Context, keyPrefix: String): EnableTimePreference {
+             return EnableTimePreference(context, keyPrefix)
+         }
+     }
+diff --git a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/MainActivity.kt b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/MainActivity.kt
+index 4eab53c..67c32c0 100644
+--- a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/MainActivity.kt
++++ b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/MainActivity.kt
+@@ -16,25 +16,26 @@ class MainActivity : AppCompatActivity() {
+     private val timeDurationPreference: TimeDurationPreference by lazy { TimeDurationPreference(applicationContext)}
+     private var currentTimeoutDuration: TimeDurationValue? = null
+     private val timeoutMessage: StringBuilder = StringBuilder()
+-    private var requestPermissionLauncher: ActivityResultLauncher<String>? = null
+-    private var startLauncher: ActivityResultLauncher<Intent>? = null
++    private var requestPermissionLauncher =
++        registerForActivityResult<String, Boolean>(
++            ActivityResultContracts.RequestPermission()) { isGranted: Boolean ->
++            if(isGranted)
++                switchTimeOutByUser()
++            else
++                Toast.makeText(this, R.string.explain_system_permission, Toast.LENGTH_LONG).show()
++                finish()
++        }
++    private var startLauncher =
++        registerForActivityResult<Intent, ActivityResult>(ActivityResultContracts.StartActivityForResult()) { _: ActivityResult? ->
++            if (Settings.System.canWrite( applicationContext))
++                requestPermissionLauncher.launch("android.permission.POST_NOTIFICATIONS")
++            else
++                showExplainToSetSystemSettings()
++        }
+ 
+     override fun onCreate(savedInstanceState: Bundle?) {
+         Log.d("LS", "Main activity start")
+         super.onCreate(savedInstanceState)
+-        requestPermissionLauncher =
+-            registerForActivityResult<String, Boolean>(ActivityResultContracts.RequestPermission()) { _: Boolean? ->
+-                switchTimeOutByUser()
+-            }
+-        startLauncher =
+-            registerForActivityResult<Intent, ActivityResult>(ActivityResultContracts.StartActivityForResult()) { _: ActivityResult? ->
+-                if (Settings.System.canWrite(
+-                        applicationContext
+-                    )
+-                ) requestPermissionLauncher!!.launch("android.permission.POST_NOTIFICATIONS")
+-                else showExplainToSetSystemSettings()
+-            }
+-
+         setCurrentTimeout()
+         if (Settings.System.canWrite(applicationContext)) {
+             switchTimeOutByUser()
+@@ -59,12 +60,14 @@ class MainActivity : AppCompatActivity() {
+ 
+     private fun setCurrentTimeout() {
+         currentTimeoutDuration =
+-            SystemScreenOffTimeoutAccessor.Companion.create(applicationContext).read()
++            SystemScreenOffTimeoutAccessor.create(applicationContext).read()
+     }
+ 
+     private fun setTimeOut(settingDuration: TimeDurationValue?) {
++        if(settingDuration == null) return
+         if (currentTimeoutDuration == settingDuration) return
+-        Log.d("LS", "set time out: " + settingDuration!!.sec())
++
++        Log.d("LS", "set time out: " + settingDuration.sec())
+         SystemScreenOffTimeoutAccessor.Companion.create(applicationContext).write(settingDuration)
+         currentTimeoutDuration = settingDuration
+     }
+@@ -105,11 +108,6 @@ class MainActivity : AppCompatActivity() {
+     }
+ 
+     companion object {
+-        /**
+-         * ATTENTION: This was auto-generated to implement the App Indexing API.
+-         * See [...](https://g.co/AppIndexing/AndroidStudio) for more information.
+-         */
+-        //private GoogleApiClient client;
+         const val MIN_TIME: Int = 15 * 1000
+         const val MAX_TIME: Int = 30 * 60 * 1000
+     }
+
+commit 24746e4ca5f804bd1751a9e61d41197d5bb3d91b
+Author: Minoru <mekun@be.to>
+Date:   Wed Dec 3 23:34:33 2025 +0900
+
+    リソースの修正
+
+diff --git a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/MainActivity.kt b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/MainActivity.kt
+index 51e3780..4eab53c 100644
+--- a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/MainActivity.kt
++++ b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/MainActivity.kt
+@@ -46,7 +46,7 @@ class MainActivity : AppCompatActivity() {
+ 
+ 
+     private fun showExplainToSetSystemSettings() {
+-        Toast.makeText(this, "Please set system permission.", Toast.LENGTH_SHORT).show()
++        Toast.makeText(this, R.string.explain_system_permission, Toast.LENGTH_SHORT).show()
+     }
+ 
+     private fun switchTimeOutByUser() {
+diff --git a/app/src/main/res/values-ja/strings.xml b/app/src/main/res/values-ja/strings.xml
+index 87db9a2..08bd9a9 100644
+--- a/app/src/main/res/values-ja/strings.xml
++++ b/app/src/main/res/values-ja/strings.xml
+@@ -36,4 +36,5 @@
+     <string name="toast_disable_short">短い点灯時間のスケジュールを無効にしました</string>
+     <string name="toast_enable_long">長い点灯時間のスケジュールを有効にしました</string>
+     <string name="toast_disable_long">長い点灯時間のスケジュールを無効にしました</string>
++    <string name="explain_system_permission">スクリーンタイムアウトを設定するために、システム設定の変更を許可してください。</string>
+ </resources>
+\ No newline at end of file
+diff --git a/app/src/main/res/values/strings.xml b/app/src/main/res/values/strings.xml
+index 2bfff00..12e1edc 100644
+--- a/app/src/main/res/values/strings.xml
++++ b/app/src/main/res/values/strings.xml
+@@ -38,4 +38,5 @@
+     <string name="toast_disable_long">Long lighting time schedule has been turned off.</string>
+     <string name="open_source_licenses" translatable="false">Open Source Licenses</string>
+     <string name="privacy_policy" translatable="false">Privacy Policy</string>
++    <string name="explain_system_permission">Please set system permission to set screen timeout.</string>
+ </resources>
+\ No newline at end of file
+
+commit 52320cd87ebd7613a1e18804a5f1c107714d6e33
+Author: Minoru <mekun@be.to>
+Date:   Wed Sep 3 00:05:29 2025 +0900
+
+    リファクタリング
+    
+    主に変数の可視性の見直し
+
+diff --git a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/DurationService.kt b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/DurationService.kt
+index 71f7c67..7b4dbcf 100644
+--- a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/DurationService.kt
++++ b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/DurationService.kt
+@@ -11,7 +11,7 @@ class DurationService(private val context: Context, private val durationType: Du
+         val preference = TimeDurationPreference(context)
+         val settingDuration = preference.getDurationValue(durationType)
+         if (currentDuration == settingDuration) return
+-        Log.d("LS", "set time out: " + settingDuration!!.sec())
++        Log.d("LS", "set time out: " + settingDuration.sec())
+         SystemScreenOffTimeoutAccessor.create(context).write(settingDuration)
+ 
+         val notificationController =
+diff --git a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/MainActivity.kt b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/MainActivity.kt
+index 314c649..51e3780 100644
+--- a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/MainActivity.kt
++++ b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/MainActivity.kt
+@@ -97,6 +97,7 @@ class MainActivity : AppCompatActivity() {
+         Toast.makeText(this, timeoutMessage.toString(), Toast.LENGTH_SHORT).show()
+     }
+ 
++    @Suppress("UNUSED_PARAMETER")
+     fun goToSystemSettings(view: View) {
+         val permissionIntent = Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS)
+         permissionIntent.setData(Uri.parse("package:" + applicationContext.packageName))
+diff --git a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/NotificationController.kt b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/NotificationController.kt
+index a751b8c..9ec8cb4 100644
+--- a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/NotificationController.kt
++++ b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/NotificationController.kt
+@@ -12,8 +12,8 @@ import androidx.core.app.NotificationCompat
+ /**
+  * Created by Minoru on 2016/11/06.
+  */
+-class NotificationController(var context: Context, var durationType: DurationType?) {
+-    private var currentDurationValue: TimeDurationValue?
++class NotificationController(private val context: Context, private val durationType: DurationType) {
++    private val currentDurationValue: TimeDurationValue?
+ 
+     init {
+         val timeDurationPreference = TimeDurationPreference(context)
+diff --git a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/ShortLongTimes.kt b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/ShortLongTimes.kt
+index 1eb909f..8516929 100644
+--- a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/ShortLongTimes.kt
++++ b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/ShortLongTimes.kt
+@@ -5,7 +5,7 @@ class ShortLongTimes(requestedShortTime: Int, requestedLongTime: Int, limit: Lim
+     val longDuration: TimeDurationValue
+ 
+     init {
+-        var adjustedShortTime = minOf(requestedShortTime, requestedLongTime)
++        val adjustedShortTime = minOf(requestedShortTime, requestedLongTime)
+         shortDuration = TimeDurationValue(adjustedShortTime, limit)
+         longDuration = TimeDurationValue(requestedLongTime, limit)
+     }
+diff --git a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/TimeDurationPreference.kt b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/TimeDurationPreference.kt
+index bf0f899..1528bdd 100644
+--- a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/TimeDurationPreference.kt
++++ b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/TimeDurationPreference.kt
+@@ -4,13 +4,11 @@ import android.content.Context
+ import android.util.Log
+ import androidx.preference.PreferenceManager
+ 
+-class TimeDurationPreference(private val context: Context?) {
++class TimeDurationPreference(private val context: Context) {
+     private val shortLongTimes: ShortLongTimes
+ 
+     init {
+-        val preferences = PreferenceManager.getDefaultSharedPreferences(
+-            context!!
+-        )
++        val preferences = PreferenceManager.getDefaultSharedPreferences(context)
+         val shortSec = preferences.getInt(MINIMUM_KEY, MainActivity.Companion.MIN_TIME / 1000)
+         val longSec = preferences.getInt(MAXIMUM_KEY, MainActivity.Companion.MAX_TIME / 1000)
+         shortLongTimes = ShortLongTimes(shortSec, longSec, SettingsActivity.Companion.LimitTime)
+@@ -21,11 +19,10 @@ class TimeDurationPreference(private val context: Context?) {
+     val long: TimeDurationValue
+         get() = shortLongTimes.longDuration
+ 
+-    fun getDurationValue(type: DurationType?): TimeDurationValue? {
++    fun getDurationValue(type: DurationType): TimeDurationValue {
+         return when (type) {
+             DurationType.Long -> shortLongTimes.longDuration
+             DurationType.Short -> shortLongTimes.shortDuration
+-            else -> throw IllegalArgumentException("Unexpected type:$type")
+         }
+     }
+ 
+@@ -36,7 +33,7 @@ class TimeDurationPreference(private val context: Context?) {
+ 
+     fun save(shortLongTimes: ShortLongTimes) : String {
+         val preferences = PreferenceManager.getDefaultSharedPreferences(
+-            context!!
++            context
+         )
+         val e = preferences.edit()
+         val minimum = shortLongTimes.shortDuration.sec()
+
+commit 897bd0bbf011781f3a87d2d329445cb0ec756ad0
+Author: Minoru <mekun@be.to>
+Date:   Tue Sep 2 23:26:03 2025 +0900
+
+    durationType を valに変更して read onlyに
+
+diff --git a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/DurationService.kt b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/DurationService.kt
+index 2dc693d..71f7c67 100644
+--- a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/DurationService.kt
++++ b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/DurationService.kt
+@@ -3,12 +3,7 @@ package jp.superwooo.chaipon.lighttimeswitcher
+ import android.content.Context
+ import android.util.Log
+ 
+-class DurationService(private val context: Context, durationType: DurationType) {
+-    private var durationType = DurationType.Short
+-
+-    init {
+-        this.durationType = durationType
+-    }
++class DurationService(private val context: Context, private val durationType: DurationType) {
+ 
+     fun setTimeOut() {
+         val currentDuration: TimeDurationValue =
+
+commit d399bfc9425a86dfd7f5c8150e33cb1f3046019d
+Author: Minoru <mekun@be.to>
+Date:   Fri Aug 22 00:18:40 2025 +0900
+
+    TimeDurationPreference で 出力してたToastをSettingActivityへ移動
+    
+    Toastへ渡してた、contextが悪いのは、あるけど
+    役割りてきにも、Activityのほうがいいかな
+
+diff --git a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/MainActivity.kt b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/MainActivity.kt
+index 0573774..314c649 100644
+--- a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/MainActivity.kt
++++ b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/MainActivity.kt
+@@ -5,6 +5,7 @@ import android.net.Uri
+ import android.os.Bundle
+ import android.provider.Settings
+ import android.util.Log
++import android.view.View
+ import android.widget.Toast
+ import androidx.activity.result.ActivityResult
+ import androidx.activity.result.ActivityResultLauncher
+@@ -96,7 +97,7 @@ class MainActivity : AppCompatActivity() {
+         Toast.makeText(this, timeoutMessage.toString(), Toast.LENGTH_SHORT).show()
+     }
+ 
+-    fun goToSystemSettings() {
++    fun goToSystemSettings(view: View) {
+         val permissionIntent = Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS)
+         permissionIntent.setData(Uri.parse("package:" + applicationContext.packageName))
+         startLauncher!!.launch(permissionIntent)
+@@ -111,4 +112,5 @@ class MainActivity : AppCompatActivity() {
+         const val MIN_TIME: Int = 15 * 1000
+         const val MAX_TIME: Int = 30 * 60 * 1000
+     }
++
+ }
+diff --git a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/SettingsActivity.kt b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/SettingsActivity.kt
+index 9d24b69..005ea32 100644
+--- a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/SettingsActivity.kt
++++ b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/SettingsActivity.kt
+@@ -75,7 +75,8 @@ class SettingsActivity : AppCompatActivity() {
+             val shortLongTimes = ShortLongTimes(shortDuration, longDuration, LimitTime)
+             minimumText.setText(shortLongTimes.shortDuration.sec().toString())
+             maximumText.setText(shortLongTimes.longDuration.sec().toString())
+-            timeDurationPreference.save(shortLongTimes)
++            val message = timeDurationPreference.save(shortLongTimes)
++            Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+         }
+         shortTimeSwitch.setOnClickListener(View.OnClickListener { _: View? ->
+             if (shortTimeSwitch.isChecked) {
+diff --git a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/TimeDurationPreference.kt b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/TimeDurationPreference.kt
+index 8198053..bf0f899 100644
+--- a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/TimeDurationPreference.kt
++++ b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/TimeDurationPreference.kt
+@@ -2,7 +2,6 @@ package jp.superwooo.chaipon.lighttimeswitcher
+ 
+ import android.content.Context
+ import android.util.Log
+-import android.widget.Toast
+ import androidx.preference.PreferenceManager
+ 
+ class TimeDurationPreference(private val context: Context?) {
+@@ -35,7 +34,7 @@ class TimeDurationPreference(private val context: Context?) {
+         else DurationType.Short
+     }
+ 
+-    fun save(shortLongTimes: ShortLongTimes) {
++    fun save(shortLongTimes: ShortLongTimes) : String {
+         val preferences = PreferenceManager.getDefaultSharedPreferences(
+             context!!
+         )
+@@ -47,8 +46,7 @@ class TimeDurationPreference(private val context: Context?) {
+         e.apply()
+         Log.d("LS", "save minimum: $minimum")
+         Log.d("LS", "save maximum: $maximum")
+-        val message = context.getString(R.string.set_mini_max, minimum, maximum)
+-        Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
++        return context.getString(R.string.set_mini_max, minimum, maximum)
+     }
+ 
+     companion object {
+
+commit 653d550425899ae999eac2f732faa6c62f787869
+Author: Minoru <mekun@be.to>
+Date:   Thu Aug 21 22:24:30 2025 +0900
+
+    変数名の修正
+    
+    Kotlin の スタイル規則に合せる
+
+diff --git a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/AlarmScheduler.kt b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/AlarmScheduler.kt
+index f7b2e36..b292101 100644
+--- a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/AlarmScheduler.kt
++++ b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/AlarmScheduler.kt
+@@ -11,7 +11,7 @@ import java.time.Duration
+ import java.time.LocalTime
+ 
+ object AlarmScheduler {
+-    const val DurationTypeKey: String = "duration_type"
++    const val DURATION_TYPE_KEY: String = "duration_type"
+     @SuppressLint("ScheduleExactAlarm")
+     @JvmStatic
+     fun scheduleTimeout(context: Context, type: DurationType, scheduleTime: LocalTime) {
+@@ -76,9 +76,9 @@ object AlarmScheduler {
+         if (enableShortTimePreference.isEnabled) cancel(context, DurationType.Short)
+     }
+ 
+-    fun buildPendingIntent(context: Context?, type: DurationType): PendingIntent {
++    private fun buildPendingIntent(context: Context?, type: DurationType): PendingIntent {
+         val intent = Intent(context, TimeoutReceiver::class.java)
+-        intent.putExtra(DurationTypeKey, type.name)
++        intent.putExtra(DURATION_TYPE_KEY, type.name)
+         return PendingIntent.getBroadcast(
+             context,
+             type.ordinal,
+diff --git a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/DurationService.kt b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/DurationService.kt
+index 386a3e3..2dc693d 100644
+--- a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/DurationService.kt
++++ b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/DurationService.kt
+@@ -3,24 +3,24 @@ package jp.superwooo.chaipon.lighttimeswitcher
+ import android.content.Context
+ import android.util.Log
+ 
+-class DurationService(private val mContext: Context, durationType: DurationType) {
+-    private var mDurationType = DurationType.Short
++class DurationService(private val context: Context, durationType: DurationType) {
++    private var durationType = DurationType.Short
+ 
+     init {
+-        mDurationType = durationType
++        this.durationType = durationType
+     }
+ 
+     fun setTimeOut() {
+         val currentDuration: TimeDurationValue =
+-            SystemScreenOffTimeoutAccessor.Companion.create(mContext).read()
+-        val preference = TimeDurationPreference(mContext)
+-        val settingDuration = preference.getDurationValue(mDurationType)
++            SystemScreenOffTimeoutAccessor.Companion.create(context).read()
++        val preference = TimeDurationPreference(context)
++        val settingDuration = preference.getDurationValue(durationType)
+         if (currentDuration == settingDuration) return
+         Log.d("LS", "set time out: " + settingDuration!!.sec())
+-        SystemScreenOffTimeoutAccessor.Companion.create(mContext).write(settingDuration)
++        SystemScreenOffTimeoutAccessor.create(context).write(settingDuration)
+ 
+         val notificationController =
+-            NotificationController(mContext, mDurationType)
++            NotificationController(context, durationType)
+         notificationController.notifyTimeOut()
+     }
+ }
+diff --git a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/EnableTimePreference.kt b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/EnableTimePreference.kt
+index 995b44b..291f1cf 100644
+--- a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/EnableTimePreference.kt
++++ b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/EnableTimePreference.kt
+@@ -6,37 +6,37 @@ import androidx.preference.PreferenceManager
+ import java.time.LocalTime
+ 
+ class EnableTimePreference private constructor(
+-    private val mContext: Context?,
+-    private val mKeyPrefix: String
++    private val context: Context?,
++    private val keyPrefix: String
+ ) {
+-    private val mHourKey = mKeyPrefix + "hour"
+-    private val mMinuteKey = mKeyPrefix + "minute"
+-    private val mEnabledKey = mKeyPrefix + "enabled"
+-    private val mPreference: SharedPreferences =
+-        PreferenceManager.getDefaultSharedPreferences(mContext!!.applicationContext)
++    private val hourKey = keyPrefix + "hour"
++    private val minuteKey = keyPrefix + "minute"
++    private val enabledKey = keyPrefix + "enabled"
++    private val preference: SharedPreferences =
++        PreferenceManager.getDefaultSharedPreferences(context!!.applicationContext)
+ 
+     fun save(time: LocalTime, enabled: Boolean) {
+-        val e = mPreference.edit()
+-        e.putBoolean(mEnabledKey, enabled)
+-        e.putInt(mHourKey, time.hour)
+-        e.putInt(mMinuteKey, time.minute)
++        val e = preference.edit()
++        e.putBoolean(enabledKey, enabled)
++        e.putInt(hourKey, time.hour)
++        e.putInt(minuteKey, time.minute)
+         e.apply()
+     }
+ 
+     fun save(enabled: Boolean) {
+-        val e = mPreference.edit()
+-        e.putBoolean(mEnabledKey, enabled)
++        val e = preference.edit()
++        e.putBoolean(enabledKey, enabled)
+         e.apply()
+     }
+ 
+     fun loadTime(): LocalTime {
+-        val hour = mPreference.getInt(mHourKey, 0)
+-        val minute = mPreference.getInt(mMinuteKey, 0)
++        val hour = preference.getInt(hourKey, 0)
++        val minute = preference.getInt(minuteKey, 0)
+         return LocalTime.of(hour, minute)
+     }
+ 
+     val isEnabled: Boolean
+-        get() = mPreference.getBoolean(mEnabledKey, false)
++        get() = preference.getBoolean(enabledKey, false)
+ 
+     companion object {
+         fun create(context: Context?, keyPrefix: String): EnableTimePreference {
+diff --git a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/LimitTime.kt b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/LimitTime.kt
+index 7a72ee8..b883c51 100644
+--- a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/LimitTime.kt
++++ b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/LimitTime.kt
+@@ -3,8 +3,8 @@ package jp.superwooo.chaipon.lighttimeswitcher
+ import kotlin.math.max
+ import kotlin.math.min
+ 
+-class LimitTime(private val _min: Int, private val _max: Int) {
++class LimitTime(private val min: Int, private val max: Int) {
+     fun apply(value: Int): Int {
+-        return max(_min.toDouble(), min(_max.toDouble(), value.toDouble())).toInt()
++        return max(min.toDouble(), min(max.toDouble(), value.toDouble())).toInt()
+     }
+ }
+diff --git a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/MainActivity.kt b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/MainActivity.kt
+index 628e3e9..0573774 100644
+--- a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/MainActivity.kt
++++ b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/MainActivity.kt
+@@ -5,7 +5,6 @@ import android.net.Uri
+ import android.os.Bundle
+ import android.provider.Settings
+ import android.util.Log
+-import android.view.View
+ import android.widget.Toast
+ import androidx.activity.result.ActivityResult
+ import androidx.activity.result.ActivityResultLauncher
+@@ -13,25 +12,25 @@ import androidx.activity.result.contract.ActivityResultContracts
+ import androidx.appcompat.app.AppCompatActivity
+ 
+ class MainActivity : AppCompatActivity() {
+-    private val mTimeDurationPreference: TimeDurationPreference by lazy { TimeDurationPreference(applicationContext)}
+-    private var mCurrentTimeoutDuration: TimeDurationValue? = null
++    private val timeDurationPreference: TimeDurationPreference by lazy { TimeDurationPreference(applicationContext)}
++    private var currentTimeoutDuration: TimeDurationValue? = null
+     private val timeoutMessage: StringBuilder = StringBuilder()
+-    private var mRequestPermissionLauncher: ActivityResultLauncher<String>? = null
+-    private var mStartLauncher: ActivityResultLauncher<Intent>? = null
++    private var requestPermissionLauncher: ActivityResultLauncher<String>? = null
++    private var startLauncher: ActivityResultLauncher<Intent>? = null
+ 
+     override fun onCreate(savedInstanceState: Bundle?) {
+         Log.d("LS", "Main activity start")
+         super.onCreate(savedInstanceState)
+-        mRequestPermissionLauncher =
++        requestPermissionLauncher =
+             registerForActivityResult<String, Boolean>(ActivityResultContracts.RequestPermission()) { _: Boolean? ->
+                 switchTimeOutByUser()
+             }
+-        mStartLauncher =
++        startLauncher =
+             registerForActivityResult<Intent, ActivityResult>(ActivityResultContracts.StartActivityForResult()) { _: ActivityResult? ->
+                 if (Settings.System.canWrite(
+                         applicationContext
+                     )
+-                ) mRequestPermissionLauncher!!.launch("android.permission.POST_NOTIFICATIONS")
++                ) requestPermissionLauncher!!.launch("android.permission.POST_NOTIFICATIONS")
+                 else showExplainToSetSystemSettings()
+             }
+ 
+@@ -58,25 +57,25 @@ class MainActivity : AppCompatActivity() {
+     }
+ 
+     private fun setCurrentTimeout() {
+-        mCurrentTimeoutDuration =
++        currentTimeoutDuration =
+             SystemScreenOffTimeoutAccessor.Companion.create(applicationContext).read()
+     }
+ 
+     private fun setTimeOut(settingDuration: TimeDurationValue?) {
+-        if (mCurrentTimeoutDuration == settingDuration) return
++        if (currentTimeoutDuration == settingDuration) return
+         Log.d("LS", "set time out: " + settingDuration!!.sec())
+         SystemScreenOffTimeoutAccessor.Companion.create(applicationContext).write(settingDuration)
+-        mCurrentTimeoutDuration = settingDuration
++        currentTimeoutDuration = settingDuration
+     }
+ 
+     private val switchedTimeDurationValue: TimeDurationValue?
+         get() {
+-            if (mCurrentTimeoutDuration == mTimeDurationPreference?.short) {
++            if (currentTimeoutDuration == timeDurationPreference.short) {
+                 Log.d("LS", "set to max")
+-                return mTimeDurationPreference?.long
++                return timeDurationPreference.long
+             } else {
+                 Log.d("LS", "set to min")
+-                return mTimeDurationPreference?.short
++                return timeDurationPreference.short
+             }
+         }
+ 
+@@ -84,23 +83,23 @@ class MainActivity : AppCompatActivity() {
+         val notification =
+             NotificationController(
+                 applicationContext,
+-                mTimeDurationPreference!!.getType(mCurrentTimeoutDuration)
++                timeDurationPreference.getType(currentTimeoutDuration)
+             )
+         notification.notifyTimeOut()
+     }
+ 
+     private fun makeTimeOutMessage() {
+-        timeoutMessage.append(getString(R.string.setting_message, mCurrentTimeoutDuration!!.sec()))
++        timeoutMessage.append(getString(R.string.setting_message, currentTimeoutDuration!!.sec()))
+     }
+ 
+     private fun showTimeOutMessageToToast() {
+         Toast.makeText(this, timeoutMessage.toString(), Toast.LENGTH_SHORT).show()
+     }
+ 
+-    fun goToSystemSettings(view: View?) {
++    fun goToSystemSettings() {
+         val permissionIntent = Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS)
+         permissionIntent.setData(Uri.parse("package:" + applicationContext.packageName))
+-        mStartLauncher!!.launch(permissionIntent)
++        startLauncher!!.launch(permissionIntent)
+     }
+ 
+     companion object {
+@@ -109,8 +108,7 @@ class MainActivity : AppCompatActivity() {
+          * See [...](https://g.co/AppIndexing/AndroidStudio) for more information.
+          */
+         //private GoogleApiClient client;
+-        const val MinTime: Int = 15 * 1000
+-        const val MaxTime: Int = 30 * 60 * 1000
+-        var DurationTypeKey: String = "DurationType"
++        const val MIN_TIME: Int = 15 * 1000
++        const val MAX_TIME: Int = 30 * 60 * 1000
+     }
+ }
+diff --git a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/NotificationController.kt b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/NotificationController.kt
+index d2b3b24..a751b8c 100644
+--- a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/NotificationController.kt
++++ b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/NotificationController.kt
+@@ -12,19 +12,19 @@ import androidx.core.app.NotificationCompat
+ /**
+  * Created by Minoru on 2016/11/06.
+  */
+-class NotificationController(var mContext: Context, var mDurationType: DurationType?) {
+-    var mCurrentDurationValue: TimeDurationValue?
++class NotificationController(var context: Context, var durationType: DurationType?) {
++    private var currentDurationValue: TimeDurationValue?
+ 
+     init {
+-        val timeDurationPreference = TimeDurationPreference(mContext)
+-        mCurrentDurationValue = timeDurationPreference.getDurationValue(mDurationType)
++        val timeDurationPreference = TimeDurationPreference(context)
++        currentDurationValue = timeDurationPreference.getDurationValue(durationType)
+     }
+ 
+     private fun createNotificationChannel(): NotificationManager {
+         // Create the NotificationChannel, but only on API 26+ because
+         // the NotificationChannel class is new and not in the support library
+         val notificationManager =
+-            mContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
++            context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+         val name: CharSequence = "LS"
+         val description = "LS"
+         val importance = NotificationManager.IMPORTANCE_LOW
+@@ -41,7 +41,7 @@ class NotificationController(var mContext: Context, var mDurationType: DurationT
+     fun notifyTimeOut() {
+         val notificationManager = createNotificationChannel()
+         val notificationBuilder =
+-            NotificationCompat.Builder(mContext, CHANNEL_ID)
++            NotificationCompat.Builder(context, CHANNEL_ID)
+         notificationBuilder.setCategory(NotificationCompat.CATEGORY_MESSAGE)
+         setNotificationIcon(notificationBuilder)
+         setNotificationText(notificationBuilder)
+@@ -59,9 +59,9 @@ class NotificationController(var mContext: Context, var mDurationType: DurationT
+ 
+     private fun setApplicationToPushNotification(notificationBuilder: NotificationCompat.Builder) {
+         val pending = PendingIntent.getActivity(
+-            mContext,
++            context,
+             0,
+-            Intent(mContext, MainActivity::class.java),
++            Intent(context, MainActivity::class.java),
+             PendingIntent.FLAG_IMMUTABLE
+         )
+         notificationBuilder.setContentIntent(pending)
+@@ -72,22 +72,22 @@ class NotificationController(var mContext: Context, var mDurationType: DurationT
+     }
+ 
+     private fun setNotificationText(notificationBuilder: NotificationCompat.Builder) {
+-        notificationBuilder.setContentTitle(mContext.getString(R.string.lighting_time))
++        notificationBuilder.setContentTitle(context.getString(R.string.lighting_time))
+         notificationBuilder.setContentText(timeoutMessage)
+         notificationBuilder.setTicker(timeoutMessage)
+     }
+ 
+     private val timeoutMessage: StringBuilder
+         get() = StringBuilder(
+-            mContext.getString(
++            context.getString(
+                 R.string.setting_message,
+-                mCurrentDurationValue!!.sec()
++                currentDurationValue!!.sec()
+             )
+         )
+ 
+ 
+     private fun setNotificationIcon(notificationBuilder: NotificationCompat.Builder) {
+-        if (mDurationType === DurationType.Short) {
++        if (durationType === DurationType.Short) {
+             Log.d("LS", "set icon short")
+             notificationBuilder.setSmallIcon(R.drawable.ic_stat_light_time_short)
+         } else {
+diff --git a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/SchedulePreference.kt b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/SchedulePreference.kt
+index 4f7369e..7136837 100644
+--- a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/SchedulePreference.kt
++++ b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/SchedulePreference.kt
+@@ -4,18 +4,18 @@ import android.content.Context
+ import android.content.SharedPreferences
+ import androidx.preference.PreferenceManager
+ 
+-class SchedulePreference private constructor(private val mContext: Context) {
+-    private val mPreference: SharedPreferences =
+-        PreferenceManager.getDefaultSharedPreferences(mContext.applicationContext)
+-    private val mKey = "enabledSchedule"
++class SchedulePreference private constructor(private val context: Context) {
++    private val preference: SharedPreferences =
++        PreferenceManager.getDefaultSharedPreferences(context.applicationContext)
++    private val key = "enabledSchedule"
+     fun save(enabled: Boolean) {
+-        val e = mPreference.edit()
+-        e.putBoolean(mKey, enabled)
++        val e = preference.edit()
++        e.putBoolean(key, enabled)
+         e.apply()
+     }
+ 
+     val isEnabled: Boolean
+-        get() = mPreference.getBoolean(mKey, false)
++        get() = preference.getBoolean(key, false)
+ 
+     companion object {
+         fun create(context: Context): SchedulePreference {
+diff --git a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/SettingsActivity.kt b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/SettingsActivity.kt
+index 90acb39..9d24b69 100644
+--- a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/SettingsActivity.kt
++++ b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/SettingsActivity.kt
+@@ -1,7 +1,6 @@
+ package jp.superwooo.chaipon.lighttimeswitcher
+ 
+ import android.app.AlarmManager
+-import android.content.Context
+ import android.content.DialogInterface
+ import android.content.Intent
+ import android.net.Uri
+@@ -29,14 +28,14 @@ import jp.superwooo.chaipon.lighttimeswitcher.AlarmScheduler.scheduleTimeout
+ import java.time.LocalTime
+ 
+ class SettingsActivity : AppCompatActivity() {
+-    private val mTimeDurationPreference: TimeDurationPreference by lazy{TimeDurationPreference(applicationContext)}
+-    private val mScheduleSwitch: CheckBox by lazy {findViewById(R.id.checkbox_enable_schedule_func)}
+-    private val mShortTimeSwitch: CheckBox by lazy {findViewById(R.id.checkbox_enable_time_to_set_short)}
+-    private val mLongTimeSwitch: CheckBox by lazy {findViewById(R.id.checkbox_enable_time_to_set_long)}
+-    private val mShortTimePicker: TimePicker by lazy{findViewById(R.id.set_short_at)}
+-    private val mLongTimePicker: TimePicker by lazy{findViewById(R.id.set_long_at)}
+-    private val mAlarmManager: AlarmManager by lazy{getSystemService(ALARM_SERVICE) as AlarmManager}
+-    private val mSchedulePermissionLauncher =
++    private val timeDurationPreference: TimeDurationPreference by lazy{TimeDurationPreference(applicationContext)}
++    private val scheduleSwitch: CheckBox by lazy {findViewById(R.id.checkbox_enable_schedule_func)}
++    private val shortTimeSwitch: CheckBox by lazy {findViewById(R.id.checkbox_enable_time_to_set_short)}
++    private val longTimeSwitch: CheckBox by lazy {findViewById(R.id.checkbox_enable_time_to_set_long)}
++    private val shortTimePicker: TimePicker by lazy{findViewById(R.id.set_short_at)}
++    private val longTimePicker: TimePicker by lazy{findViewById(R.id.set_long_at)}
++    private val alarmManager: AlarmManager by lazy{getSystemService(ALARM_SERVICE) as AlarmManager}
++    private val schedulePermissionLauncher =
+         registerForActivityResult<Intent, ActivityResult>(ActivityResultContracts.StartActivityForResult()) {_: ActivityResult? ->
+             if (canScheduleExactAlarms()) {
+                 setScheduleSwitch(true)
+@@ -68,7 +67,7 @@ class SettingsActivity : AppCompatActivity() {
+ 
+         LoadSettings()
+ 
+-        findViewById<View>(R.id.applyButton).setOnClickListener { v: View? ->
++        findViewById<View>(R.id.applyButton).setOnClickListener { _: View? ->
+             val minimumText = findViewById<EditText>(R.id.editMinimumTime)
+             val maximumText = findViewById<EditText>(R.id.editMaximumTime)
+             val shortDuration = parseInt(minimumText.text.toString(), loadCurrentMinimum())
+@@ -76,10 +75,10 @@ class SettingsActivity : AppCompatActivity() {
+             val shortLongTimes = ShortLongTimes(shortDuration, longDuration, LimitTime)
+             minimumText.setText(shortLongTimes.shortDuration.sec().toString())
+             maximumText.setText(shortLongTimes.longDuration.sec().toString())
+-            mTimeDurationPreference.save(shortLongTimes)
++            timeDurationPreference.save(shortLongTimes)
+         }
+-        mShortTimeSwitch.setOnClickListener(View.OnClickListener { v: View? ->
+-            if (mShortTimeSwitch.isChecked) {
++        shortTimeSwitch.setOnClickListener(View.OnClickListener { _: View? ->
++            if (shortTimeSwitch.isChecked) {
+                 enableTime(DurationType.Short, R.id.set_short_at, EnableTimeShortKeyPref)
+                 Toast.makeText(this, R.string.toast_enable_short, Toast.LENGTH_SHORT).show()
+             } else {
+@@ -87,8 +86,8 @@ class SettingsActivity : AppCompatActivity() {
+                 Toast.makeText(this, R.string.toast_disable_short, Toast.LENGTH_SHORT).show()
+             }
+         })
+-        mLongTimeSwitch.setOnClickListener(View.OnClickListener { v: View? ->
+-            if (mLongTimeSwitch.isChecked) {
++        longTimeSwitch.setOnClickListener(View.OnClickListener { _: View? ->
++            if (longTimeSwitch.isChecked) {
+                 enableTime(DurationType.Long, R.id.set_long_at, EnableTimeLongKeyPref)
+                 Toast.makeText(this, R.string.toast_enable_long, Toast.LENGTH_SHORT).show()
+             } else {
+@@ -96,9 +95,9 @@ class SettingsActivity : AppCompatActivity() {
+                 Toast.makeText(this, R.string.toast_disable_long, Toast.LENGTH_SHORT).show()
+             }
+         })
+-        mScheduleSwitch.setOnClickListener(View.OnClickListener setOnClickListener@{ _: View? ->
++        scheduleSwitch.setOnClickListener(View.OnClickListener setOnClickListener@{ _: View? ->
+             Log.d("LS", "click schedule check box")
+-            setScheduleSwitch(mScheduleSwitch.isChecked)
++            setScheduleSwitch(scheduleSwitch.isChecked)
+             if (requireAlarmPermission()) {
+                 Log.d("LS", "show permission dialog by click")
+                 showPermissionDialog()
+@@ -129,30 +128,30 @@ class SettingsActivity : AppCompatActivity() {
+         AlertDialog.Builder(this)
+             .setTitle(R.string.schedule_enable_title)
+             .setMessage(R.string.explain_schedule_enable_dialog)
+-            .setPositiveButton(R.string.move_button) { dialog: DialogInterface?, which: Int ->
++            .setPositiveButton(R.string.move_button) { _: DialogInterface?, _: Int ->
+                 val intent = Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM)
+-                mSchedulePermissionLauncher.launch(intent)
++                schedulePermissionLauncher.launch(intent)
+             }
+-            .setNegativeButton(R.string.cancel_button) { dialog: DialogInterface?, which: Int ->
++            .setNegativeButton(R.string.cancel_button) { _: DialogInterface?, _: Int ->
+                 setScheduleSwitch(false)
+             }
+             .show()
+     }
+ 
+     private fun setScheduleSwitch(enabled: Boolean) {
+-        mScheduleSwitch.isChecked = enabled
++        scheduleSwitch.isChecked = enabled
+         SchedulePreference.Companion.create(applicationContext).save(enabled)
+     }
+ 
+     private fun updateScheduleUIState() {
+         Log.d("LS", "updateScheduleUIState")
+-        val scheduleEnabled = mScheduleSwitch.isChecked
++        val scheduleEnabled = scheduleSwitch.isChecked
+ 
+-        mShortTimeSwitch.isEnabled = scheduleEnabled
+-        mLongTimeSwitch.isEnabled = scheduleEnabled
++        shortTimeSwitch.isEnabled = scheduleEnabled
++        longTimeSwitch.isEnabled = scheduleEnabled
+ 
+-        mShortTimePicker.isEnabled = scheduleEnabled && !mShortTimeSwitch.isChecked
+-        mLongTimePicker.isEnabled = scheduleEnabled && !mLongTimeSwitch.isChecked
++        shortTimePicker.isEnabled = scheduleEnabled && !shortTimeSwitch.isChecked
++        longTimePicker.isEnabled = scheduleEnabled && !longTimeSwitch.isChecked
+ 
+         try {
+             if (scheduleEnabled) scheduleAll(applicationContext)
+@@ -189,22 +188,22 @@ class SettingsActivity : AppCompatActivity() {
+     }
+ 
+     private fun requireAlarmPermission(): Boolean {
+-        if (!mScheduleSwitch.isChecked) return false
++        if (!scheduleSwitch.isChecked) return false
+         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return false
+-        return !mAlarmManager.canScheduleExactAlarms()
++        return !alarmManager.canScheduleExactAlarms()
+     }
+ 
+     private fun canScheduleExactAlarms(): Boolean {
+         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return true
+-        return mAlarmManager.canScheduleExactAlarms()
++        return alarmManager.canScheduleExactAlarms()
+     }
+ 
+     private fun loadCurrentMinimum(): Int {
+-        return mTimeDurationPreference.short.sec()
++        return timeDurationPreference.short.sec()
+     }
+ 
+     private fun loadCurrentMaximum(): Int {
+-        return mTimeDurationPreference.long.sec()
++        return timeDurationPreference.long.sec()
+     }
+ 
+     private fun LoadSettings() {
+@@ -218,7 +217,7 @@ class SettingsActivity : AppCompatActivity() {
+     }
+ 
+     private fun loadScheduleSwitch() {
+-        mScheduleSwitch.isChecked =
++        scheduleSwitch.isChecked =
+             SchedulePreference.Companion.create(applicationContext).isEnabled
+     }
+ 
+@@ -254,8 +253,8 @@ class SettingsActivity : AppCompatActivity() {
+     private fun loadTimeDurationSettings() {
+         val minimumText = findViewById<EditText>(R.id.editMinimumTime)
+         val maximumText = findViewById<EditText>(R.id.editMaximumTime)
+-        minimumText.setText(mTimeDurationPreference.short.sec().toString())
+-        maximumText.setText(mTimeDurationPreference.long.sec().toString())
++        minimumText.setText(timeDurationPreference.short.sec().toString())
++        maximumText.setText(timeDurationPreference.long.sec().toString())
+     }
+ 
+ 
+diff --git a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/ShortLongTimes.kt b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/ShortLongTimes.kt
+index f17de07..1eb909f 100644
+--- a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/ShortLongTimes.kt
++++ b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/ShortLongTimes.kt
+@@ -1,13 +1,12 @@
+ package jp.superwooo.chaipon.lighttimeswitcher
+ 
+-class ShortLongTimes(short_duration: Int, long_duration: Int, limit: LimitTime) {
++class ShortLongTimes(requestedShortTime: Int, requestedLongTime: Int, limit: LimitTime) {
+     val shortDuration: TimeDurationValue
+     val longDuration: TimeDurationValue
+ 
+     init {
+-        var short_duration = short_duration
+-        if (short_duration > long_duration) short_duration = long_duration
+-        shortDuration = TimeDurationValue(short_duration, limit)
+-        longDuration = TimeDurationValue(long_duration, limit)
++        var adjustedShortTime = minOf(requestedShortTime, requestedLongTime)
++        shortDuration = TimeDurationValue(adjustedShortTime, limit)
++        longDuration = TimeDurationValue(requestedLongTime, limit)
+     }
+ }
+diff --git a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/SystemScreenOffTimeoutAccessor.kt b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/SystemScreenOffTimeoutAccessor.kt
+index ee05bfb..fec81b9 100644
+--- a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/SystemScreenOffTimeoutAccessor.kt
++++ b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/SystemScreenOffTimeoutAccessor.kt
+@@ -3,11 +3,10 @@ package jp.superwooo.chaipon.lighttimeswitcher
+ import android.content.Context
+ import android.provider.Settings
+ import android.provider.Settings.SettingNotFoundException
+-import jp.superwooo.chaipon.lighttimeswitcher.LimitTime
+ 
+-class SystemScreenOffTimeoutAccessor private constructor(private val mContext: Context) {
++class SystemScreenOffTimeoutAccessor private constructor(private val context: Context) {
+     fun read(): TimeDurationValue {
+-        val cr = mContext.contentResolver
++        val cr = context.contentResolver
+         try {
+             val timeOut = Settings.System.getInt(cr, Settings.System.SCREEN_OFF_TIMEOUT) / 1000
+             return TimeDurationValue(timeOut, SettingsActivity.Companion.LimitTime)
+@@ -19,7 +18,7 @@ class SystemScreenOffTimeoutAccessor private constructor(private val mContext: C
+ 
+     fun write(timeout: TimeDurationValue?) {
+         Settings.System.putInt(
+-            mContext.contentResolver,
++            context.contentResolver,
+             Settings.System.SCREEN_OFF_TIMEOUT,
+             timeout!!.milliSecond()
+         )
+diff --git a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/TimeDurationPreference.kt b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/TimeDurationPreference.kt
+index 9e8140c..8198053 100644
+--- a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/TimeDurationPreference.kt
++++ b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/TimeDurationPreference.kt
+@@ -4,17 +4,16 @@ import android.content.Context
+ import android.util.Log
+ import android.widget.Toast
+ import androidx.preference.PreferenceManager
+-import jp.superwooo.chaipon.lighttimeswitcher.LimitTime
+ 
+-class TimeDurationPreference(private val mContext: Context?) {
++class TimeDurationPreference(private val context: Context?) {
+     private val shortLongTimes: ShortLongTimes
+ 
+     init {
+         val preferences = PreferenceManager.getDefaultSharedPreferences(
+-            mContext!!
++            context!!
+         )
+-        val shortSec = preferences.getInt(MinimumKey, MainActivity.Companion.MinTime / 1000)
+-        val longSec = preferences.getInt(MaximumKey, MainActivity.Companion.MaxTime / 1000)
++        val shortSec = preferences.getInt(MINIMUM_KEY, MainActivity.Companion.MIN_TIME / 1000)
++        val longSec = preferences.getInt(MAXIMUM_KEY, MainActivity.Companion.MAX_TIME / 1000)
+         shortLongTimes = ShortLongTimes(shortSec, longSec, SettingsActivity.Companion.LimitTime)
+     }
+ 
+@@ -38,22 +37,22 @@ class TimeDurationPreference(private val mContext: Context?) {
+ 
+     fun save(shortLongTimes: ShortLongTimes) {
+         val preferences = PreferenceManager.getDefaultSharedPreferences(
+-            mContext!!
++            context!!
+         )
+         val e = preferences.edit()
+         val minimum = shortLongTimes.shortDuration.sec()
+         val maximum = shortLongTimes.longDuration.sec()
+-        e.putInt(MinimumKey, minimum)
+-        e.putInt(MaximumKey, maximum)
++        e.putInt(MINIMUM_KEY, minimum)
++        e.putInt(MAXIMUM_KEY, maximum)
+         e.apply()
+         Log.d("LS", "save minimum: $minimum")
+         Log.d("LS", "save maximum: $maximum")
+-        val message = mContext.getString(R.string.set_mini_max, minimum, maximum)
+-        Toast.makeText(mContext, message, Toast.LENGTH_SHORT).show()
++        val message = context.getString(R.string.set_mini_max, minimum, maximum)
++        Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+     }
+ 
+     companion object {
+-        private const val MinimumKey = "minimumTime"
+-        private const val MaximumKey = "maximumTime"
++        private const val MINIMUM_KEY = "minimumTime"
++        private const val MAXIMUM_KEY = "maximumTime"
+     }
+ }
+diff --git a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/TimeDurationValue.kt b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/TimeDurationValue.kt
+index cab3fa3..f978704 100644
+--- a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/TimeDurationValue.kt
++++ b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/TimeDurationValue.kt
+@@ -1,31 +1,31 @@
+ package jp.superwooo.chaipon.lighttimeswitcher
+ 
+ class TimeDurationValue(second: Int, limit: LimitTime) {
+-    private val mMilliSecond: Int
+-    private val mSecond = limit.apply(second)
++    private val milliSecond: Int
++    private val second = limit.apply(second)
+ 
+     init {
+-        mMilliSecond = mSecond * 1000
++        milliSecond = this.second * 1000
+     }
+ 
+-    override fun equals(value: Any?): Boolean {
+-        if (this === value) return true
+-        if (value == null || javaClass != value.javaClass) return false
++    override fun equals(other: Any?): Boolean {
++        if (this === other) return true
++        if (other == null || javaClass != other.javaClass) return false
+ 
+-        val other = value as TimeDurationValue
+-        return mSecond == other.mSecond
++        val otherValue = other as TimeDurationValue
++        return second == otherValue.second
+     }
+ 
+     override fun hashCode(): Int {
+-        return Integer.hashCode(mSecond)
++        return Integer.hashCode(second)
+     }
+ 
+ 
+     fun sec(): Int {
+-        return mSecond
++        return second
+     }
+ 
+     fun milliSecond(): Int {
+-        return mMilliSecond
++        return milliSecond
+     }
+ }
+diff --git a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/TimeoutReceiver.kt b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/TimeoutReceiver.kt
+index 3c8b03c..37a5d92 100644
+--- a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/TimeoutReceiver.kt
++++ b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/TimeoutReceiver.kt
+@@ -8,7 +8,7 @@ import jp.superwooo.chaipon.lighttimeswitcher.AlarmScheduler.scheduleAll
+ 
+ class TimeoutReceiver : BroadcastReceiver() {
+     override fun onReceive(context: Context, intent: Intent) {
+-        val durationTypeName = intent.getStringExtra(AlarmScheduler.DurationTypeKey)
++        val durationTypeName = intent.getStringExtra(AlarmScheduler.DURATION_TYPE_KEY)
+         Log.d("LS", "Time out receive: $durationTypeName")
+         var durationService: DurationService?
+         try {
+
+commit d3a8cb6abce2b98e6eb61463fc7cb3b9068a74ff
+Author: Minoru <mekun@be.to>
+Date:   Wed Aug 13 15:24:59 2025 +0900
+
+    Build/実行 OK. ひととおり大丈夫そう
+
+diff --git a/.idea/kotlinc.xml b/.idea/kotlinc.xml
+new file mode 100644
+index 0000000..148fdd2
+--- /dev/null
++++ b/.idea/kotlinc.xml
+@@ -0,0 +1,6 @@
++<?xml version="1.0" encoding="UTF-8"?>
++<project version="4">
++  <component name="KotlinJpsPluginSettings">
++    <option name="version" value="1.9.24" />
++  </component>
++</project>
+\ No newline at end of file
+diff --git a/app/build.gradle b/app/build.gradle
+index 7250e8f..e47b699 100644
+--- a/app/build.gradle
++++ b/app/build.gradle
+@@ -1,5 +1,6 @@
+ plugins {
+     id 'com.android.application'
++    id 'org.jetbrains.kotlin.android'
+ }
+ apply plugin: 'com.google.android.gms.oss-licenses-plugin'
+ 
+@@ -32,6 +33,14 @@ android {
+             assets.srcDirs += "$buildDir/generated/assets/oss_licenses/release"
+         }
+     }
++    compileOptions{
++        sourceCompatibility JavaVersion.VERSION_17
++        targetCompatibility JavaVersion.VERSION_17
++    }
++
++    kotlinOptions {
++        jvmTarget = '17'
++    }
+ }
+ 
+ dependencies {
+@@ -41,6 +50,7 @@ dependencies {
+     implementation 'com.google.firebase:firebase-appindexing:20.0.0'
+     implementation 'androidx.legacy:legacy-support-v4:1.0.0'
+     implementation 'androidx.preference:preference:1.2.1'
++    implementation 'androidx.core:core-ktx:1.13.0'
+     testImplementation 'junit:junit:4.13.2'
+ 
+     def lifecycle_version = "2.4.1"
+diff --git a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/AlarmScheduler.java b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/AlarmScheduler.java
+deleted file mode 100644
+index 6bed61f..0000000
+--- a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/AlarmScheduler.java
++++ /dev/null
+@@ -1,71 +0,0 @@
+-package jp.superwooo.chaipon.lighttimeswitcher;
+-
+-import android.app.AlarmManager;
+-import android.app.PendingIntent;
+-import android.content.Context;
+-import android.content.Intent;
+-import android.os.SystemClock;
+-import android.util.Log;
+-
+-import java.time.Duration;
+-import java.time.LocalTime;
+-import java.util.Calendar;
+-
+-public class AlarmScheduler {
+-    static final String DurationTypeKey = "duration_type";
+-    public static void scheduleTimeout(Context context, DurationType type, LocalTime scheduleTime) {
+-        AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+-        Log.d("LS", "schedule to" + scheduleTime.toString() + ". type: " + type.name());
+-        alarmManager.setExact(
+-                AlarmManager.ELAPSED_REALTIME_WAKEUP,
+-                getElapsedTriggerTime(scheduleTime),
+-                buildPendingIntent(context, type)
+-        );
+-    }
+-    private static long getElapsedTriggerTime(LocalTime scheduleTime){
+-        LocalTime now = LocalTime.now();
+-        long delayTime = Duration.between(now, scheduleTime).toMillis();
+-        if(delayTime < 0) {
+-            Log.i("LS", "Invalid delay time: " + delayTime);
+-            delayTime += Duration.ofHours(24).toMillis();
+-        }
+-        Log.d("LS", "After: " + delayTime + "ms");
+-        return SystemClock.elapsedRealtime() + delayTime;
+-    }
+-    public static void cancel(Context context, DurationType type) {
+-        Log.d("LS", "cancel: " + type.name());
+-        AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+-        alarmManager.cancel(buildPendingIntent(context, type));
+-    }
+-    public static void scheduleAll(Context context){
+-        EnableTimePreference enableShortTimePreference = EnableTimePreference.create(context, SettingsActivity.EnableTimeShortKeyPref);
+-        EnableTimePreference enableLongTimePreference = EnableTimePreference.create(context, SettingsActivity.EnableTimeLongKeyPref);
+-        Log.d("LS", "schedule all setting");
+-
+-        if(enableLongTimePreference.isEnabled())
+-            scheduleTimeout(context, DurationType.Long, enableLongTimePreference.loadTime());
+-
+-        if(enableShortTimePreference.isEnabled())
+-            scheduleTimeout(context, DurationType.Short, enableShortTimePreference.loadTime());
+-
+-    }
+-    public static void cancelAll(Context context){
+-        EnableTimePreference enableShortTimePreference = EnableTimePreference.create(context, SettingsActivity.EnableTimeShortKeyPref);
+-        EnableTimePreference enableLongTimePreference = EnableTimePreference.create(context, SettingsActivity.EnableTimeLongKeyPref);
+-        Log.d("LS", "cancel all schedule");
+-
+-        if(enableLongTimePreference.isEnabled())
+-            cancel(context, DurationType.Long);
+-
+-        if(enableShortTimePreference.isEnabled())
+-            cancel(context, DurationType.Short);
+-
+-    }
+-    public static PendingIntent buildPendingIntent(Context context, DurationType type){
+-        Intent intent = new Intent(context, TimeoutReceiver.class);
+-        intent.putExtra(DurationTypeKey, type.name());
+-        return PendingIntent.getBroadcast(
+-                context, type.ordinal(), intent, PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+-        );
+-    }
+-}
+diff --git a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/AlarmScheduler.kt b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/AlarmScheduler.kt
+new file mode 100644
+index 0000000..f7b2e36
+--- /dev/null
++++ b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/AlarmScheduler.kt
+@@ -0,0 +1,89 @@
++package jp.superwooo.chaipon.lighttimeswitcher
++
++import android.annotation.SuppressLint
++import android.app.AlarmManager
++import android.app.PendingIntent
++import android.content.Context
++import android.content.Intent
++import android.os.SystemClock
++import android.util.Log
++import java.time.Duration
++import java.time.LocalTime
++
++object AlarmScheduler {
++    const val DurationTypeKey: String = "duration_type"
++    @SuppressLint("ScheduleExactAlarm")
++    @JvmStatic
++    fun scheduleTimeout(context: Context, type: DurationType, scheduleTime: LocalTime) {
++        val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
++        Log.d("LS", "schedule to" + scheduleTime.toString() + ". type: " + type.name)
++        alarmManager.setExact(
++            AlarmManager.ELAPSED_REALTIME_WAKEUP,
++            getElapsedTriggerTime(scheduleTime),
++            buildPendingIntent(context, type)
++        )
++    }
++
++    private fun getElapsedTriggerTime(scheduleTime: LocalTime): Long {
++        val now = LocalTime.now()
++        var delayTime = Duration.between(now, scheduleTime).toMillis()
++        if (delayTime < 0) {
++            Log.i("LS", "Invalid delay time: $delayTime")
++            delayTime += Duration.ofHours(24).toMillis()
++        }
++        Log.d("LS", "After: " + delayTime + "ms")
++        return SystemClock.elapsedRealtime() + delayTime
++    }
++
++    @JvmStatic
++    fun cancel(context: Context, type: DurationType) {
++        Log.d("LS", "cancel: " + type.name)
++        val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
++        alarmManager.cancel(buildPendingIntent(context, type))
++    }
++
++    @JvmStatic
++    fun scheduleAll(context: Context) {
++        val enableShortTimePreference =
++            EnableTimePreference.create(context, SettingsActivity.EnableTimeShortKeyPref)
++        val enableLongTimePreference =
++            EnableTimePreference.create(context, SettingsActivity.EnableTimeLongKeyPref)
++        Log.d("LS", "schedule all setting")
++
++        if (enableLongTimePreference.isEnabled) scheduleTimeout(
++            context,
++            DurationType.Long,
++            enableLongTimePreference.loadTime()
++        )
++
++        if (enableShortTimePreference.isEnabled) scheduleTimeout(
++            context,
++            DurationType.Short,
++            enableShortTimePreference.loadTime()
++        )
++    }
++
++    @JvmStatic
++    fun cancelAll(context: Context) {
++        val enableShortTimePreference =
++            EnableTimePreference.create(context, SettingsActivity.EnableTimeShortKeyPref)
++        val enableLongTimePreference =
++            EnableTimePreference.create(context, SettingsActivity.EnableTimeLongKeyPref)
++        Log.d("LS", "cancel all schedule")
++
++        if (enableLongTimePreference.isEnabled) cancel(context, DurationType.Long)
++
++        if (enableShortTimePreference.isEnabled) cancel(context, DurationType.Short)
++    }
++
++    fun buildPendingIntent(context: Context?, type: DurationType): PendingIntent {
++        val intent = Intent(context, TimeoutReceiver::class.java)
++        intent.putExtra(DurationTypeKey, type.name)
++        return PendingIntent.getBroadcast(
++            context,
++            type.ordinal,
++            intent,
++            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
++        )
++    }
++}
+diff --git a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/BOOTReceiver.java b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/BOOTReceiver.java
+deleted file mode 100644
+index 47b2d32..0000000
+--- a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/BOOTReceiver.java
++++ /dev/null
+@@ -1,26 +0,0 @@
+-package jp.superwooo.chaipon.lighttimeswitcher;
+-
+-import android.content.BroadcastReceiver;
+-import android.content.Context;
+-import android.content.Intent;
+-import android.util.Log;
+-
+-import java.net.Inet4Address;
+-
+-public class BOOTReceiver extends BroadcastReceiver {
+-    @Override
+-    public void onReceive(Context context, Intent intent) {
+-        String action = intent.getAction();
+-        Log.d("LS", "BOOTReceiver triggered with action: " + action);
+-        if(intent.ACTION_BOOT_COMPLETED.equals(action)) {
+-            try {
+-                if(SchedulePreference.create(context).isEnabled())
+-                    AlarmScheduler.scheduleAll(context);
+-            } catch (SecurityException e) {
+-                Log.e("LS", "scheduling error because of security error");
+-            }
+-        }else{
+-            Log.d("LS", "BOOTReceiver ignored non-boot action: " + action);
+-        }
+-    }
+-}
+diff --git a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/BOOTReceiver.kt b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/BOOTReceiver.kt
+new file mode 100644
+index 0000000..361fe36
+--- /dev/null
++++ b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/BOOTReceiver.kt
+@@ -0,0 +1,23 @@
++package jp.superwooo.chaipon.lighttimeswitcher
++
++import android.content.BroadcastReceiver
++import android.content.Context
++import android.content.Intent
++import android.util.Log
++import jp.superwooo.chaipon.lighttimeswitcher.AlarmScheduler.scheduleAll
++
++class BOOTReceiver : BroadcastReceiver() {
++    override fun onReceive(context: Context, intent: Intent) {
++        val action = intent.action
++        Log.d("LS", "BOOTReceiver triggered with action: $action")
++        if (Intent.ACTION_BOOT_COMPLETED == action) {
++            try {
++                if (SchedulePreference.Companion.create(context).isEnabled) scheduleAll(context)
++            } catch (e: SecurityException) {
++                Log.e("LS", "scheduling error because of security error")
++            }
++        } else {
++            Log.d("LS", "BOOTReceiver ignored non-boot action: $action")
++        }
++    }
++}
+diff --git a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/DurationService.java b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/DurationService.java
+deleted file mode 100644
+index bd87b25..0000000
+--- a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/DurationService.java
++++ /dev/null
+@@ -1,26 +0,0 @@
+-package jp.superwooo.chaipon.lighttimeswitcher;
+-
+-import android.content.Context;
+-import android.util.Log;
+-
+-public class DurationService {
+-    private Context mContext;
+-    private DurationType mDurationType = DurationType.Short;
+-    public DurationService(Context context, DurationType durationType){
+-        mContext = context;
+-        mDurationType = durationType;
+-    }
+-
+-    public void setTimeOut(){
+-        TimeDurationValue currentDuration = SystemScreenOffTimeoutAccessor.create(mContext).read();
+-        TimeDurationPreference preference = new TimeDurationPreference(mContext);
+-        TimeDurationValue settingDuration = preference.getDurationValue(mDurationType);
+-        if(currentDuration.equals(settingDuration)) return;
+-        Log.d("LS", "set time out: " + settingDuration.sec());
+-        SystemScreenOffTimeoutAccessor.create(mContext).write(settingDuration);
+-
+-        NotificationController notificationController =
+-                new NotificationController(mContext, mDurationType);
+-        notificationController.notifyTimeOut();
+-    }
+-}
+diff --git a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/DurationService.kt b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/DurationService.kt
+new file mode 100644
+index 0000000..386a3e3
+--- /dev/null
++++ b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/DurationService.kt
+@@ -0,0 +1,26 @@
++package jp.superwooo.chaipon.lighttimeswitcher
++
++import android.content.Context
++import android.util.Log
++
++class DurationService(private val mContext: Context, durationType: DurationType) {
++    private var mDurationType = DurationType.Short
++
++    init {
++        mDurationType = durationType
++    }
++
++    fun setTimeOut() {
++        val currentDuration: TimeDurationValue =
++            SystemScreenOffTimeoutAccessor.Companion.create(mContext).read()
++        val preference = TimeDurationPreference(mContext)
++        val settingDuration = preference.getDurationValue(mDurationType)
++        if (currentDuration == settingDuration) return
++        Log.d("LS", "set time out: " + settingDuration!!.sec())
++        SystemScreenOffTimeoutAccessor.Companion.create(mContext).write(settingDuration)
++
++        val notificationController =
++            NotificationController(mContext, mDurationType)
++        notificationController.notifyTimeOut()
++    }
++}
+diff --git a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/DurationType.java b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/DurationType.java
+deleted file mode 100644
+index 9ef3480..0000000
+--- a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/DurationType.java
++++ /dev/null
+@@ -1,19 +0,0 @@
+-package jp.superwooo.chaipon.lighttimeswitcher;
+-
+-import android.content.Context;
+-
+-public enum DurationType {
+-    Short{
+-        @Override
+-        public DurationService create(Context context) {
+-            return new DurationService(context, this);
+-        }
+-    },
+-    Long{
+-        @Override
+-        public DurationService create(Context context) {
+-            return new DurationService(context, this);
+-        }
+-    };
+-    public abstract DurationService create(Context context);
+-}
+diff --git a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/DurationType.kt b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/DurationType.kt
+new file mode 100644
+index 0000000..6aa1bba
+--- /dev/null
++++ b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/DurationType.kt
+@@ -0,0 +1,18 @@
++package jp.superwooo.chaipon.lighttimeswitcher
++
++import android.content.Context
++
++enum class DurationType {
++    Short {
++        override fun create(context: Context): DurationService {
++            return DurationService(context, this)
++        }
++    },
++    Long {
++        override fun create(context: Context): DurationService {
++            return DurationService(context, this)
++        }
++    };
++
++    abstract fun create(context: Context): DurationService
++}
+diff --git a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/EnableTimePreference.java b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/EnableTimePreference.java
+deleted file mode 100644
+index fe7c4e1..0000000
+--- a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/EnableTimePreference.java
++++ /dev/null
+@@ -1,53 +0,0 @@
+-package jp.superwooo.chaipon.lighttimeswitcher;
+-
+-import android.content.Context;
+-import android.content.SharedPreferences;
+-
+-import androidx.preference.PreferenceManager;
+-
+-import java.time.LocalTime;
+-
+-public class EnableTimePreference {
+-    private Context mContext;
+-    private final String mHourKey;
+-    private final String mMinuteKey;
+-    private final String mEnabledKey;
+-    private SharedPreferences mPreference;
+-    private String mKeyPrefix;
+-
+-    public static EnableTimePreference create(Context context, String keyPrefix){
+-        return new EnableTimePreference(context, keyPrefix);
+-    }
+-
+-    private EnableTimePreference(Context context, String keyPrefix){
+-        mContext = context;
+-        mPreference = PreferenceManager.getDefaultSharedPreferences(mContext.getApplicationContext());
+-        mKeyPrefix = keyPrefix;
+-        mHourKey = keyPrefix + "hour";
+-        mMinuteKey = keyPrefix + "minute";
+-        mEnabledKey = keyPrefix + "enabled";
+-
+-    }
+-    public void save(LocalTime time, boolean enabled){
+-        SharedPreferences.Editor e = mPreference.edit();
+-        e.putBoolean(mEnabledKey, enabled);
+-        e.putInt(mHourKey, time.getHour());
+-        e.putInt(mMinuteKey, time.getMinute());
+-        e.apply();
+-    }
+-    public void save(boolean enabled) {
+-        SharedPreferences.Editor e = mPreference.edit();
+-        e.putBoolean(mEnabledKey, enabled);
+-        e.apply();
+-    }
+-
+-    public LocalTime loadTime(){
+-        int hour = mPreference.getInt(mHourKey, 0);
+-        int minute = mPreference.getInt(mMinuteKey, 0);
+-        return LocalTime.of(hour, minute);
+-    }
+-
+-    public boolean isEnabled(){
+-        return mPreference.getBoolean(mEnabledKey, false);
+-    }
+-}
+diff --git a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/EnableTimePreference.kt b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/EnableTimePreference.kt
+new file mode 100644
+index 0000000..995b44b
+--- /dev/null
++++ b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/EnableTimePreference.kt
+@@ -0,0 +1,46 @@
++package jp.superwooo.chaipon.lighttimeswitcher
++
++import android.content.Context
++import android.content.SharedPreferences
++import androidx.preference.PreferenceManager
++import java.time.LocalTime
++
++class EnableTimePreference private constructor(
++    private val mContext: Context?,
++    private val mKeyPrefix: String
++) {
++    private val mHourKey = mKeyPrefix + "hour"
++    private val mMinuteKey = mKeyPrefix + "minute"
++    private val mEnabledKey = mKeyPrefix + "enabled"
++    private val mPreference: SharedPreferences =
++        PreferenceManager.getDefaultSharedPreferences(mContext!!.applicationContext)
++
++    fun save(time: LocalTime, enabled: Boolean) {
++        val e = mPreference.edit()
++        e.putBoolean(mEnabledKey, enabled)
++        e.putInt(mHourKey, time.hour)
++        e.putInt(mMinuteKey, time.minute)
++        e.apply()
++    }
++
++    fun save(enabled: Boolean) {
++        val e = mPreference.edit()
++        e.putBoolean(mEnabledKey, enabled)
++        e.apply()
++    }
++
++    fun loadTime(): LocalTime {
++        val hour = mPreference.getInt(mHourKey, 0)
++        val minute = mPreference.getInt(mMinuteKey, 0)
++        return LocalTime.of(hour, minute)
++    }
++
++    val isEnabled: Boolean
++        get() = mPreference.getBoolean(mEnabledKey, false)
++
++    companion object {
++        fun create(context: Context?, keyPrefix: String): EnableTimePreference {
++            return EnableTimePreference(context, keyPrefix)
++        }
++    }
++}
+diff --git a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/LimitTime.java b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/LimitTime.java
+deleted file mode 100644
+index 3d2b2ac..0000000
+--- a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/LimitTime.java
++++ /dev/null
+@@ -1,13 +0,0 @@
+-package jp.superwooo.chaipon.lighttimeswitcher;
+-
+-public class LimitTime {
+-    private final int _min;
+-    private final int _max;
+-    public LimitTime(int min, int max){
+-        _min = min;
+-        _max = max;
+-    }
+-    public int apply(int value){
+-        return Math.max(_min, Math.min(_max, value));
+-    }
+-}
+diff --git a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/LimitTime.kt b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/LimitTime.kt
+new file mode 100644
+index 0000000..7a72ee8
+--- /dev/null
++++ b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/LimitTime.kt
+@@ -0,0 +1,10 @@
++package jp.superwooo.chaipon.lighttimeswitcher
++
++import kotlin.math.max
++import kotlin.math.min
++
++class LimitTime(private val _min: Int, private val _max: Int) {
++    fun apply(value: Int): Int {
++        return max(_min.toDouble(), min(_max.toDouble(), value.toDouble())).toInt()
++    }
++}
+diff --git a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/MainActivity.java b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/MainActivity.java
+deleted file mode 100644
+index bbfba3a..0000000
+--- a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/MainActivity.java
++++ /dev/null
+@@ -1,112 +0,0 @@
+-package jp.superwooo.chaipon.lighttimeswitcher;
+-
+-import android.content.Intent;
+-import android.net.Uri;
+-import android.os.Bundle;
+-import android.provider.Settings;
+-import android.util.Log;
+-import android.view.View;
+-
+-import androidx.activity.result.ActivityResultLauncher;
+-import androidx.activity.result.contract.ActivityResultContracts;
+-import androidx.appcompat.app.AppCompatActivity;
+-
+-import static android.widget.Toast.*;
+-
+-public class MainActivity extends AppCompatActivity {
+-
+-    /**
+-     * ATTENTION: This was auto-generated to implement the App Indexing API.
+-     * See <a href="https://g.co/AppIndexing/AndroidStudio">...</a> for more information.
+-     */
+-    //private GoogleApiClient client;
+-    public static final Integer MinTime = 15 * 1000;
+-    public static final Integer MaxTime = 30 * 60 * 1000;
+-    TimeDurationPreference mTimeDurationPreference;
+-    private TimeDurationValue mCurrentTimeoutDuration;
+-    private final StringBuilder mTimeOutMessage = new StringBuilder();
+-    public StringBuilder getTimeoutMessage(){
+-        return mTimeOutMessage;
+-    }
+-    ActivityResultLauncher<String> mRequestPermissionLauncher;
+-    ActivityResultLauncher<Intent> mStartLauncher;
+-
+-    @Override
+-    protected void onCreate(Bundle savedInstanceState) {
+-        Log.d("LS", "Main activity start");
+-        super.onCreate(savedInstanceState);
+-        mRequestPermissionLauncher = registerForActivityResult(new ActivityResultContracts.RequestPermission(), isGranted ->{
+-            switchTimeOutByUser();
+-        });
+-        mStartLauncher = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result ->{
+-            if(Settings.System.canWrite(getApplicationContext()))
+-                mRequestPermissionLauncher.launch("android.permission.POST_NOTIFICATIONS");
+-            else
+-                showExplainToSetSystemSettings();
+-        });
+-        mTimeDurationPreference = new TimeDurationPreference(getApplicationContext());
+-
+-        setCurrentTimeout();
+-        if(Settings.System.canWrite(getApplicationContext())) {
+-            switchTimeOutByUser();
+-        } else {
+-            setTheme(androidx.appcompat.R.style.Base_Theme_AppCompat);
+-            setContentView(R.layout.explain_to_setting_system_permissions);
+-        }
+-    }
+-
+-
+-    private void showExplainToSetSystemSettings() {
+-        makeText(this, "Please set system permission.", LENGTH_SHORT).show();
+-    }
+-
+-    private void switchTimeOutByUser(){
+-        setTimeOut(getSwitchedTimeDurationValue());
+-        makeTimeOutMessage();
+-        showTimeOutMessageToToast();
+-        notifyTimeOut();
+-        this.finish();
+-    }
+-    private void setCurrentTimeout(){
+-        mCurrentTimeoutDuration = SystemScreenOffTimeoutAccessor.create(getApplicationContext()).read();
+-    }
+-
+-    private void setTimeOut(TimeDurationValue settingDuration){
+-        if(mCurrentTimeoutDuration.equals(settingDuration)) return;
+-        Log.d("LS", "set time out: " + settingDuration.sec());
+-        SystemScreenOffTimeoutAccessor.create(getApplicationContext()).write(settingDuration);
+-        mCurrentTimeoutDuration = settingDuration;
+-    }
+-    private TimeDurationValue getSwitchedTimeDurationValue() {
+-        if(mCurrentTimeoutDuration.equals(mTimeDurationPreference.getShort())){
+-            Log.d("LS", "set to max");
+-            return mTimeDurationPreference.getLong();
+-        }else{
+-            Log.d("LS", "set to min");
+-            return mTimeDurationPreference.getShort();
+-        }
+-    }
+-
+-    public static String DurationTypeKey = "DurationType";
+-
+-    private void notifyTimeOut() {
+-        NotificationController notification =
+-                new NotificationController(getApplicationContext(),
+-                        mTimeDurationPreference.getType(mCurrentTimeoutDuration));
+-        notification.notifyTimeOut();
+-    }
+-
+-    private void makeTimeOutMessage() {
+-        mTimeOutMessage.append(getString(R.string.setting_message, mCurrentTimeoutDuration.sec()));
+-    }
+-
+-    private void showTimeOutMessageToToast() {
+-        makeText(this, mTimeOutMessage.toString(), LENGTH_SHORT).show();
+-    }
+-
+-    public void goToSystemSettings(View view) {
+-        Intent permissionIntent = new Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS);
+-        permissionIntent.setData(Uri.parse("package:" + getApplicationContext().getPackageName()));
+-        mStartLauncher.launch(permissionIntent);
+-    }
+-}
+diff --git a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/MainActivity.kt b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/MainActivity.kt
+new file mode 100644
+index 0000000..628e3e9
+--- /dev/null
++++ b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/MainActivity.kt
+@@ -0,0 +1,116 @@
++package jp.superwooo.chaipon.lighttimeswitcher
++
++import android.content.Intent
++import android.net.Uri
++import android.os.Bundle
++import android.provider.Settings
++import android.util.Log
++import android.view.View
++import android.widget.Toast
++import androidx.activity.result.ActivityResult
++import androidx.activity.result.ActivityResultLauncher
++import androidx.activity.result.contract.ActivityResultContracts
++import androidx.appcompat.app.AppCompatActivity
++
++class MainActivity : AppCompatActivity() {
++    private val mTimeDurationPreference: TimeDurationPreference by lazy { TimeDurationPreference(applicationContext)}
++    private var mCurrentTimeoutDuration: TimeDurationValue? = null
++    private val timeoutMessage: StringBuilder = StringBuilder()
++    private var mRequestPermissionLauncher: ActivityResultLauncher<String>? = null
++    private var mStartLauncher: ActivityResultLauncher<Intent>? = null
++
++    override fun onCreate(savedInstanceState: Bundle?) {
++        Log.d("LS", "Main activity start")
++        super.onCreate(savedInstanceState)
++        mRequestPermissionLauncher =
++            registerForActivityResult<String, Boolean>(ActivityResultContracts.RequestPermission()) { _: Boolean? ->
++                switchTimeOutByUser()
++            }
++        mStartLauncher =
++            registerForActivityResult<Intent, ActivityResult>(ActivityResultContracts.StartActivityForResult()) { _: ActivityResult? ->
++                if (Settings.System.canWrite(
++                        applicationContext
++                    )
++                ) mRequestPermissionLauncher!!.launch("android.permission.POST_NOTIFICATIONS")
++                else showExplainToSetSystemSettings()
++            }
++
++        setCurrentTimeout()
++        if (Settings.System.canWrite(applicationContext)) {
++            switchTimeOutByUser()
++        } else {
++            setTheme(androidx.appcompat.R.style.Base_Theme_AppCompat)
++            setContentView(R.layout.explain_to_setting_system_permissions)
++        }
++    }
++
++
++    private fun showExplainToSetSystemSettings() {
++        Toast.makeText(this, "Please set system permission.", Toast.LENGTH_SHORT).show()
++    }
++
++    private fun switchTimeOutByUser() {
++        setTimeOut(switchedTimeDurationValue)
++        makeTimeOutMessage()
++        showTimeOutMessageToToast()
++        notifyTimeOut()
++        this.finish()
++    }
++
++    private fun setCurrentTimeout() {
++        mCurrentTimeoutDuration =
++            SystemScreenOffTimeoutAccessor.Companion.create(applicationContext).read()
++    }
++
++    private fun setTimeOut(settingDuration: TimeDurationValue?) {
++        if (mCurrentTimeoutDuration == settingDuration) return
++        Log.d("LS", "set time out: " + settingDuration!!.sec())
++        SystemScreenOffTimeoutAccessor.Companion.create(applicationContext).write(settingDuration)
++        mCurrentTimeoutDuration = settingDuration
++    }
++
++    private val switchedTimeDurationValue: TimeDurationValue?
++        get() {
++            if (mCurrentTimeoutDuration == mTimeDurationPreference?.short) {
++                Log.d("LS", "set to max")
++                return mTimeDurationPreference?.long
++            } else {
++                Log.d("LS", "set to min")
++                return mTimeDurationPreference?.short
++            }
++        }
++
++    private fun notifyTimeOut() {
++        val notification =
++            NotificationController(
++                applicationContext,
++                mTimeDurationPreference!!.getType(mCurrentTimeoutDuration)
++            )
++        notification.notifyTimeOut()
++    }
++
++    private fun makeTimeOutMessage() {
++        timeoutMessage.append(getString(R.string.setting_message, mCurrentTimeoutDuration!!.sec()))
++    }
++
++    private fun showTimeOutMessageToToast() {
++        Toast.makeText(this, timeoutMessage.toString(), Toast.LENGTH_SHORT).show()
++    }
++
++    fun goToSystemSettings(view: View?) {
++        val permissionIntent = Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS)
++        permissionIntent.setData(Uri.parse("package:" + applicationContext.packageName))
++        mStartLauncher!!.launch(permissionIntent)
++    }
++
++    companion object {
++        /**
++         * ATTENTION: This was auto-generated to implement the App Indexing API.
++         * See [...](https://g.co/AppIndexing/AndroidStudio) for more information.
++         */
++        //private GoogleApiClient client;
++        const val MinTime: Int = 15 * 1000
++        const val MaxTime: Int = 30 * 60 * 1000
++        var DurationTypeKey: String = "DurationType"
++    }
++}
+diff --git a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/NotificationController.java b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/NotificationController.java
+deleted file mode 100644
+index a5b1141..0000000
+--- a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/NotificationController.java
++++ /dev/null
+@@ -1,99 +0,0 @@
+-package jp.superwooo.chaipon.lighttimeswitcher;
+-
+-
+-import android.app.Notification;
+-import android.app.NotificationChannel;
+-import android.app.NotificationManager;
+-import android.app.PendingIntent;
+-import android.content.Context;
+-import android.content.Intent;
+-import android.os.Build;
+-import android.util.Log;
+-
+-import androidx.annotation.RequiresApi;
+-import androidx.core.app.NotificationCompat;
+-
+-/**
+- * Created by Minoru on 2016/11/06.
+- */
+-
+-public class NotificationController {
+-    private static final String CHANNEL_ID = "LightSwitcherNotification";
+-    Context mContext;
+-    TimeDurationValue mCurrentDurationValue;
+-    DurationType mDurationType;
+-    public NotificationController(Context context, DurationType durationType) {
+-        mContext = context;
+-        mDurationType = durationType;
+-        TimeDurationPreference timeDurationPreference = new TimeDurationPreference(context);
+-        mCurrentDurationValue = timeDurationPreference.getDurationValue(mDurationType);
+-    }
+-    private NotificationManager createNotificationChannel() {
+-        // Create the NotificationChannel, but only on API 26+ because
+-        // the NotificationChannel class is new and not in the support library
+-        NotificationManager notificationManager =
+-                (NotificationManager)mContext.getSystemService(mContext.NOTIFICATION_SERVICE);
+-        CharSequence name = "LS";
+-        String description = "LS";
+-        int importance = NotificationManager.IMPORTANCE_LOW;
+-        NotificationChannel channel = new NotificationChannel(CHANNEL_ID, name, importance);
+-        channel.setDescription(description);
+-        channel.setShowBadge(false);
+-        // Register the channel with the system; you can't change the importance
+-        // or other notification behaviors after this
+-        notificationManager.createNotificationChannel(channel);
+-        return notificationManager;
+-    }
+-
+-
+-
+-
+-    public void notifyTimeOut() {
+-        NotificationManager notificationManager = createNotificationChannel();
+-        NotificationCompat.Builder notificationBuilder =
+-                new NotificationCompat.Builder(mContext, CHANNEL_ID);
+-        notificationBuilder.setCategory(NotificationCompat.CATEGORY_MESSAGE);
+-        setNotificationIcon(notificationBuilder);
+-        setNotificationText(notificationBuilder);
+-
+-
+-        setNotificationForever(notificationBuilder);
+-
+-        setApplicationToPushNotification(notificationBuilder);
+-
+-        Notification notification = notificationBuilder.build();
+-
+-        Log.d("LS", "notify" );
+-        notificationManager.notify(1, notification);
+-    }
+-    private void setApplicationToPushNotification(NotificationCompat.Builder notificationBuilder) {
+-        PendingIntent pending = PendingIntent.getActivity(mContext,
+-                0,
+-                new Intent(mContext, MainActivity.class),
+-                PendingIntent.FLAG_IMMUTABLE);
+-        notificationBuilder.setContentIntent(pending);
+-    }
+-    private void setNotificationForever(NotificationCompat.Builder notificationBuilder) {
+-        notificationBuilder.setOngoing(true);
+-    }
+-
+-    private void setNotificationText(NotificationCompat.Builder notificationBuilder) {
+-        notificationBuilder.setContentTitle(mContext.getString(R.string.lighting_time));
+-        notificationBuilder.setContentText(getTimeoutMessage());
+-        notificationBuilder.setTicker(getTimeoutMessage());
+-    }
+-    private StringBuilder getTimeoutMessage(){
+-        return new StringBuilder(mContext.getString(R.string.setting_message, mCurrentDurationValue.sec()));
+-    }
+-
+-
+-    private void setNotificationIcon(NotificationCompat.Builder notificationBuilder) {
+-        if(mDurationType == DurationType.Short){
+-            Log.d("LS", "set icon short" );
+-            notificationBuilder.setSmallIcon(R.drawable.ic_stat_light_time_short);
+-        }else{
+-            Log.d("LS", "set icon long" );
+-            notificationBuilder.setSmallIcon(R.drawable.ic_stat_light_time_long);
+-        }
+-    }
+-}
+diff --git a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/NotificationController.kt b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/NotificationController.kt
+new file mode 100644
+index 0000000..d2b3b24
+--- /dev/null
++++ b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/NotificationController.kt
+@@ -0,0 +1,102 @@
++package jp.superwooo.chaipon.lighttimeswitcher
++
++import android.app.NotificationChannel
++import android.app.NotificationManager
++import android.app.PendingIntent
++import android.content.Context
++import android.content.Intent
++import android.util.Log
++import androidx.core.app.NotificationCompat
++
++
++/**
++ * Created by Minoru on 2016/11/06.
++ */
++class NotificationController(var mContext: Context, var mDurationType: DurationType?) {
++    var mCurrentDurationValue: TimeDurationValue?
++
++    init {
++        val timeDurationPreference = TimeDurationPreference(mContext)
++        mCurrentDurationValue = timeDurationPreference.getDurationValue(mDurationType)
++    }
++
++    private fun createNotificationChannel(): NotificationManager {
++        // Create the NotificationChannel, but only on API 26+ because
++        // the NotificationChannel class is new and not in the support library
++        val notificationManager =
++            mContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
++        val name: CharSequence = "LS"
++        val description = "LS"
++        val importance = NotificationManager.IMPORTANCE_LOW
++        val channel = NotificationChannel(CHANNEL_ID, name, importance)
++        channel.description = description
++        channel.setShowBadge(false)
++        // Register the channel with the system; you can't change the importance
++        // or other notification behaviors after this
++        notificationManager.createNotificationChannel(channel)
++        return notificationManager
++    }
++
++
++    fun notifyTimeOut() {
++        val notificationManager = createNotificationChannel()
++        val notificationBuilder =
++            NotificationCompat.Builder(mContext, CHANNEL_ID)
++        notificationBuilder.setCategory(NotificationCompat.CATEGORY_MESSAGE)
++        setNotificationIcon(notificationBuilder)
++        setNotificationText(notificationBuilder)
++
++
++        setNotificationForever(notificationBuilder)
++
++        setApplicationToPushNotification(notificationBuilder)
++
++        val notification = notificationBuilder.build()
++
++        Log.d("LS", "notify")
++        notificationManager.notify(1, notification)
++    }
++
++    private fun setApplicationToPushNotification(notificationBuilder: NotificationCompat.Builder) {
++        val pending = PendingIntent.getActivity(
++            mContext,
++            0,
++            Intent(mContext, MainActivity::class.java),
++            PendingIntent.FLAG_IMMUTABLE
++        )
++        notificationBuilder.setContentIntent(pending)
++    }
++
++    private fun setNotificationForever(notificationBuilder: NotificationCompat.Builder) {
++        notificationBuilder.setOngoing(true)
++    }
++
++    private fun setNotificationText(notificationBuilder: NotificationCompat.Builder) {
++        notificationBuilder.setContentTitle(mContext.getString(R.string.lighting_time))
++        notificationBuilder.setContentText(timeoutMessage)
++        notificationBuilder.setTicker(timeoutMessage)
++    }
++
++    private val timeoutMessage: StringBuilder
++        get() = StringBuilder(
++            mContext.getString(
++                R.string.setting_message,
++                mCurrentDurationValue!!.sec()
++            )
++        )
++
++
++    private fun setNotificationIcon(notificationBuilder: NotificationCompat.Builder) {
++        if (mDurationType === DurationType.Short) {
++            Log.d("LS", "set icon short")
++            notificationBuilder.setSmallIcon(R.drawable.ic_stat_light_time_short)
++        } else {
++            Log.d("LS", "set icon long")
++            notificationBuilder.setSmallIcon(R.drawable.ic_stat_light_time_long)
++        }
++    }
++
++    companion object {
++        private const val CHANNEL_ID = "LightSwitcherNotification"
++    }
++}
+diff --git a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/SchedulePreference.java b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/SchedulePreference.java
+deleted file mode 100644
+index cfb5f04..0000000
+--- a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/SchedulePreference.java
++++ /dev/null
+@@ -1,33 +0,0 @@
+-package jp.superwooo.chaipon.lighttimeswitcher;
+-
+-import android.content.Context;
+-import android.content.SharedPreferences;
+-
+-import androidx.preference.PreferenceManager;
+-
+-import java.time.LocalTime;
+-
+-public class SchedulePreference {
+-    private Context mContext;
+-    private SharedPreferences mPreference;
+-    private final String mKey = "enabledSchedule";
+-
+-    public static SchedulePreference
+-    create(Context context){
+-        return new SchedulePreference(context);
+-    }
+-
+-    private SchedulePreference(Context context){
+-        mContext = context;
+-        mPreference = PreferenceManager.getDefaultSharedPreferences(mContext.getApplicationContext());
+-    }
+-    public void save(boolean enabled){
+-        SharedPreferences.Editor e = mPreference.edit();
+-        e.putBoolean(mKey, enabled);
+-        e.apply();
+-    }
+-
+-    public boolean isEnabled(){
+-        return mPreference.getBoolean(mKey, false);
+-    }
+-}
+diff --git a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/SchedulePreference.kt b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/SchedulePreference.kt
+new file mode 100644
+index 0000000..4f7369e
+--- /dev/null
++++ b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/SchedulePreference.kt
+@@ -0,0 +1,25 @@
++package jp.superwooo.chaipon.lighttimeswitcher
++
++import android.content.Context
++import android.content.SharedPreferences
++import androidx.preference.PreferenceManager
++
++class SchedulePreference private constructor(private val mContext: Context) {
++    private val mPreference: SharedPreferences =
++        PreferenceManager.getDefaultSharedPreferences(mContext.applicationContext)
++    private val mKey = "enabledSchedule"
++    fun save(enabled: Boolean) {
++        val e = mPreference.edit()
++        e.putBoolean(mKey, enabled)
++        e.apply()
++    }
++
++    val isEnabled: Boolean
++        get() = mPreference.getBoolean(mKey, false)
++
++    companion object {
++        fun create(context: Context): SchedulePreference {
++            return SchedulePreference(context)
++        }
++    }
++}
+diff --git a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/SettingsActivity.java b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/SettingsActivity.java
+deleted file mode 100644
+index af74741..0000000
+--- a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/SettingsActivity.java
++++ /dev/null
+@@ -1,274 +0,0 @@
+-package jp.superwooo.chaipon.lighttimeswitcher;
+-
+-import static android.widget.Toast.makeText;
+-
+-import android.annotation.SuppressLint;
+-import android.app.AlarmManager;
+-import android.content.Context;
+-import android.content.Intent;
+-import android.net.Uri;
+-import android.os.Build;
+-import android.os.Bundle;
+-import android.os.Handler;
+-import android.os.Looper;
+-import android.provider.Settings;
+-import android.view.Menu;
+-import android.view.MenuItem;
+-import android.view.View;
+-import android.widget.CheckBox;
+-import android.widget.EditText;
+-import android.widget.TextView;
+-import android.widget.TimePicker;
+-import android.widget.Toast;
+-import android.util.Log;
+-
+-import androidx.activity.result.ActivityResultLauncher;
+-import androidx.activity.result.contract.ActivityResultContracts;
+-import androidx.appcompat.app.AlertDialog;
+-import androidx.appcompat.app.AppCompatActivity;
+-
+-import com.google.android.gms.oss.licenses.OssLicensesMenuActivity;
+-
+-import java.time.LocalTime;
+-
+-public class SettingsActivity extends AppCompatActivity {
+-    static final int SettingEnableMinimumTime = 10;
+-    static final int SettingEnableMaximumTime = 3600 * 24;
+-    public static final LimitTime LimitTime = new LimitTime(SettingEnableMinimumTime, SettingEnableMaximumTime);
+-    private Context mContext;
+-    public static  final String EnableTimeShortKeyPref = "enable_time_short_";
+-    public static final String EnableTimeLongKeyPref = "enable_time_long_";
+-    private TimeDurationPreference mTimeDurationPreference;
+-    private CheckBox mScheduleSwitch;
+-    private CheckBox mShortTimeSwitch;
+-    private CheckBox mLongTimeSwitch;
+-    private TimePicker mShortTimePicker;
+-    private TimePicker mLongTimePicker;
+-    private AlarmManager mAlarmManager;
+-    private final ActivityResultLauncher<Intent> mSchedulePermissionLauncher =
+-            registerForActivityResult(new ActivityResultContracts.StartActivityForResult(),result -> {
+-                if(canScheduleExactAlarms()){
+-                    setScheduleSwitch(true);
+-                    Toast.makeText(this, R.string.enable_schedule, Toast.LENGTH_SHORT).show();
+-                }else{
+-                    setScheduleSwitch(false);
+-                    Toast.makeText(this, R.string.disable_schedule, Toast.LENGTH_SHORT).show();
+-                }
+-                updateScheduleUIState();
+-            });
+-
+-    @Override
+-    public boolean onCreateOptionsMenu(Menu menu) {
+-        getMenuInflater().inflate(R.menu.settings_menu, menu);
+-        return true;
+-    }
+-
+-    @Override
+-    public boolean onOptionsItemSelected(MenuItem item) {
+-        if (item.getItemId() == R.id.action_close_settings) {
+-            finish(); // 設定画面を閉じる
+-            return true;
+-        }
+-        return super.onOptionsItemSelected(item);
+-    }
+-
+-    @Override
+-    protected void onCreate(Bundle savedInstanceState) {
+-        super.onCreate(savedInstanceState);
+-        Log.d("LS", "Start setting activities");
+-        setContentView(R.layout.activity_settings);
+-        mContext = getApplicationContext();
+-        mTimeDurationPreference = new TimeDurationPreference(mContext);
+-        mShortTimeSwitch = findViewById(R.id.checkbox_enable_time_to_set_short);
+-        mLongTimeSwitch = findViewById(R.id.checkbox_enable_time_to_set_long);
+-        mShortTimePicker = findViewById(R.id.set_short_at);
+-        mLongTimePicker = findViewById(R.id.set_long_at);
+-        mScheduleSwitch = findViewById(R.id.checkbox_enable_schedule_func);
+-        mAlarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
+-
+-        LoadSettings();
+-
+-        findViewById(R.id.applyButton).setOnClickListener(v -> {
+-            EditText minimumText = findViewById(R.id.editMinimumTime);
+-            EditText maximumText = findViewById(R.id.editMaximumTime);
+-            int shortDuration = parseInt(minimumText.getText().toString(), loadCurrentMinimum());
+-            int longDuration = parseInt(maximumText.getText().toString(), loadCurrentMaximum());
+-            ShortLongTimes shortLongTimes = new ShortLongTimes(shortDuration, longDuration, LimitTime);
+-            minimumText.setText(String.valueOf(shortLongTimes.getShortDuration().sec()));
+-            maximumText.setText(String.valueOf(shortLongTimes.getLongDuration().sec()));
+-
+-            mTimeDurationPreference.save(shortLongTimes);
+-        });
+-        mShortTimeSwitch.setOnClickListener(v -> {
+-            if(mShortTimeSwitch.isChecked()) {
+-                enableTime(DurationType.Short, R.id.set_short_at, EnableTimeShortKeyPref);
+-                Toast.makeText(this, R.string.toast_enable_short, Toast.LENGTH_SHORT).show();
+-            }else {
+-                disableTime(DurationType.Short, R.id.set_short_at, EnableTimeShortKeyPref);
+-                Toast.makeText(this, R.string.toast_disable_short, Toast.LENGTH_SHORT).show();
+-            }
+-        });
+-        mLongTimeSwitch.setOnClickListener(v -> {
+-            if(mLongTimeSwitch.isChecked()) {
+-                enableTime(DurationType.Long, R.id.set_long_at, EnableTimeLongKeyPref);
+-                Toast.makeText(this, R.string.toast_enable_long, Toast.LENGTH_SHORT).show();
+-            }else {
+-                disableTime(DurationType.Long, R.id.set_long_at, EnableTimeLongKeyPref);
+-                Toast.makeText(this, R.string.toast_disable_long, Toast.LENGTH_SHORT).show();
+-            }
+-        });
+-        mScheduleSwitch.setOnClickListener(v -> {
+-            Log.d("LS", "click schedule check box");
+-            setScheduleSwitch(mScheduleSwitch.isChecked());
+-           if(requireAlarmPermission()) {
+-               Log.d("LS", "show permission dialog by click");
+-               showPermissionDialog();
+-               return;
+-           }
+-           updateScheduleUIState();
+-        });
+-        TextView openSourceLicenses = findViewById(R.id.text_open_source_licenses);
+-        openSourceLicenses.setOnClickListener(new View.OnClickListener() {
+-            @Override
+-            public void onClick(View v) {
+-                OssLicensesMenuActivity.setActivityTitle("Open Source Licences");
+-                Intent intent = new Intent(SettingsActivity.this, OssLicensesMenuActivity.class);
+-                intent.putExtra("show_all", true);
+-                try {
+-                    startActivity(intent);
+-                }catch (Exception e)
+-                {
+-                    Log.e("LS", e.toString());
+-                }
+-            }
+-        });
+-        TextView privacyPolicy = findViewById(R.id.text_privacy_policy);
+-        privacyPolicy.setOnClickListener(new View.OnClickListener() {
+-            @Override
+-            public void onClick(View v) {
+-                String url = "https://chaipon.github.io/light-time-switcher-policy/";
+-                Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+-                startActivity(intent);
+-            }
+-        });
+-    }
+-    private void showPermissionDialog(){
+-        new AlertDialog.Builder(this)
+-                .setTitle(R.string.schedule_enable_title)
+-                .setMessage(R.string.explain_schedule_enable_dialog)
+-                .setPositiveButton(R.string.move_button, (dialog, which) -> {
+-                    Intent intent = new Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM);
+-                    mSchedulePermissionLauncher.launch(intent);
+-                })
+-                .setNegativeButton(R.string.cancel_button, (dialog, which) -> {
+-                    setScheduleSwitch(false);
+-                })
+-                .show();
+-    }
+-    private void setScheduleSwitch(boolean enabled){
+-        mScheduleSwitch.setChecked(enabled);
+-        SchedulePreference.create(getApplicationContext()).save(enabled);
+-    }
+-
+-    private void updateScheduleUIState(){
+-        Log.d("LS", "updateScheduleUIState");
+-        boolean scheduleEnabled = mScheduleSwitch.isChecked();
+-
+-        mShortTimeSwitch.setEnabled(scheduleEnabled);
+-        mLongTimeSwitch.setEnabled(scheduleEnabled);
+-
+-        mShortTimePicker.setEnabled(scheduleEnabled && !mShortTimeSwitch.isChecked());
+-        mLongTimePicker.setEnabled(scheduleEnabled && !mLongTimeSwitch.isChecked());
+-
+-        try {
+-            if (scheduleEnabled)
+-                AlarmScheduler.scheduleAll(mContext.getApplicationContext());
+-            else
+-                AlarmScheduler.cancelAll(mContext.getApplicationContext());
+-        }catch (SecurityException e){
+-            if(requireAlarmPermission()) {
+-                Log.d("LS", "show permission dialog by exception");
+-                showPermissionDialog();
+-            }
+-        }
+-    }
+-
+-    private void disableTime(DurationType durationType, int viewId, String prefKey){
+-        TimePicker timePicker = findViewById(viewId);
+-        timePicker.setEnabled(true);
+-        AlarmScheduler.cancel(mContext, durationType);
+-        EnableTimePreference.create(mContext, prefKey).save(false);
+-    }
+-    private void enableTime(DurationType type, int viewId, String prefKey){
+-        TimePicker timePicker = findViewById(viewId);
+-        timePicker.setEnabled(false);
+-        LocalTime targetTime = LocalTime.of(timePicker.getHour(), timePicker.getMinute());
+-        AlarmScheduler.scheduleTimeout(mContext, type, targetTime);
+-        EnableTimePreference.create(mContext, prefKey).save(targetTime, true);
+-    }
+-     private int parseInt(String inputText, int defaultTime){
+-        try{
+-            return Integer.parseInt(inputText);
+-        }catch(NumberFormatException e){
+-            return defaultTime;
+-        }
+-    }
+-    private boolean requireAlarmPermission(){
+-        if(!mScheduleSwitch.isChecked()) return false;
+-        if(Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return false;
+-        return !mAlarmManager.canScheduleExactAlarms();
+-    }
+-    private boolean canScheduleExactAlarms(){
+-        if(Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return true;
+-        return mAlarmManager.canScheduleExactAlarms();
+-    }
+-
+-    private int loadCurrentMinimum(){
+-        return mTimeDurationPreference.getShort().sec();
+-    }
+-    private int loadCurrentMaximum(){
+-        return mTimeDurationPreference.getLong().sec();
+-    }
+-
+-    private void LoadSettings() {
+-        Log.d("LS", "start load settings.");
+-        loadTimeDurationSettings();
+-        loadEnableShortTimeSettings();
+-        loadEnableLongTimeSettings();
+-        loadScheduleSwitch();
+-        updateScheduleUIState();
+-        Log.d("LS", "end load settings.");
+-    }
+-
+-    private void loadScheduleSwitch() {
+-        mScheduleSwitch.setChecked(SchedulePreference.create(getApplicationContext()).isEnabled());
+-    }
+-
+-    private void loadEnableTimeSettings(String prefixKey, int checkBoxId, int timePickerId) {
+-        EnableTimePreference enableTimePreference = EnableTimePreference.create(mContext, prefixKey);
+-
+-        CheckBox checkBox = findViewById(checkBoxId);
+-        checkBox.setChecked(enableTimePreference.isEnabled());
+-
+-        TimePicker timePicker = findViewById(timePickerId);
+-        timePicker.setHour(enableTimePreference.loadTime().getHour());
+-        timePicker.setMinute(enableTimePreference.loadTime().getMinute());
+-        timePicker.setEnabled(!checkBox.isChecked());
+-
+-    }
+-    private void loadEnableShortTimeSettings() {
+-        loadEnableTimeSettings(EnableTimeShortKeyPref, R.id.checkbox_enable_time_to_set_short, R.id.set_short_at);
+-    }
+-    private void loadEnableLongTimeSettings() {
+-        loadEnableTimeSettings(EnableTimeLongKeyPref, R.id.checkbox_enable_time_to_set_long, R.id.set_long_at);
+-    }
+-
+-    private void loadTimeDurationSettings() {
+-        EditText minimumText = findViewById(R.id.editMinimumTime);
+-        EditText maximumText = findViewById(R.id.editMaximumTime);
+-        minimumText.setText(String.valueOf(mTimeDurationPreference.getShort().sec()));
+-        maximumText.setText(String.valueOf(mTimeDurationPreference.getLong().sec()));
+-    }
+-
+-
+-}
+diff --git a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/SettingsActivity.kt b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/SettingsActivity.kt
+new file mode 100644
+index 0000000..90acb39
+--- /dev/null
++++ b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/SettingsActivity.kt
+@@ -0,0 +1,269 @@
++package jp.superwooo.chaipon.lighttimeswitcher
++
++import android.app.AlarmManager
++import android.content.Context
++import android.content.DialogInterface
++import android.content.Intent
++import android.net.Uri
++import android.os.Build
++import android.os.Bundle
++import android.provider.Settings
++import android.util.Log
++import android.view.Menu
++import android.view.MenuItem
++import android.view.View
++import android.widget.CheckBox
++import android.widget.EditText
++import android.widget.TextView
++import android.widget.TimePicker
++import android.widget.Toast
++import androidx.activity.result.ActivityResult
++import androidx.activity.result.contract.ActivityResultContracts
++import androidx.appcompat.app.AlertDialog
++import androidx.appcompat.app.AppCompatActivity
++import com.google.android.gms.oss.licenses.OssLicensesMenuActivity
++import jp.superwooo.chaipon.lighttimeswitcher.AlarmScheduler.cancel
++import jp.superwooo.chaipon.lighttimeswitcher.AlarmScheduler.cancelAll
++import jp.superwooo.chaipon.lighttimeswitcher.AlarmScheduler.scheduleAll
++import jp.superwooo.chaipon.lighttimeswitcher.AlarmScheduler.scheduleTimeout
++import java.time.LocalTime
++
++class SettingsActivity : AppCompatActivity() {
++    private val mTimeDurationPreference: TimeDurationPreference by lazy{TimeDurationPreference(applicationContext)}
++    private val mScheduleSwitch: CheckBox by lazy {findViewById(R.id.checkbox_enable_schedule_func)}
++    private val mShortTimeSwitch: CheckBox by lazy {findViewById(R.id.checkbox_enable_time_to_set_short)}
++    private val mLongTimeSwitch: CheckBox by lazy {findViewById(R.id.checkbox_enable_time_to_set_long)}
++    private val mShortTimePicker: TimePicker by lazy{findViewById(R.id.set_short_at)}
++    private val mLongTimePicker: TimePicker by lazy{findViewById(R.id.set_long_at)}
++    private val mAlarmManager: AlarmManager by lazy{getSystemService(ALARM_SERVICE) as AlarmManager}
++    private val mSchedulePermissionLauncher =
++        registerForActivityResult<Intent, ActivityResult>(ActivityResultContracts.StartActivityForResult()) {_: ActivityResult? ->
++            if (canScheduleExactAlarms()) {
++                setScheduleSwitch(true)
++                Toast.makeText(this, R.string.enable_schedule, Toast.LENGTH_SHORT).show()
++            } else {
++                setScheduleSwitch(false)
++                Toast.makeText(this, R.string.disable_schedule, Toast.LENGTH_SHORT).show()
++            }
++            updateScheduleUIState()
++        }
++
++    override fun onCreateOptionsMenu(menu: Menu): Boolean {
++        menuInflater.inflate(R.menu.settings_menu, menu)
++        return true
++    }
++
++    override fun onOptionsItemSelected(item: MenuItem): Boolean {
++        if (item.itemId == R.id.action_close_settings) {
++            finish() // 設定画面を閉じる
++            return true
++        }
++        return super.onOptionsItemSelected(item)
++    }
++
++    override fun onCreate(savedInstanceState: Bundle?) {
++        super.onCreate(savedInstanceState)
++        Log.d("LS", "Start setting activities")
++        setContentView(R.layout.activity_settings)
++
++        LoadSettings()
++
++        findViewById<View>(R.id.applyButton).setOnClickListener { v: View? ->
++            val minimumText = findViewById<EditText>(R.id.editMinimumTime)
++            val maximumText = findViewById<EditText>(R.id.editMaximumTime)
++            val shortDuration = parseInt(minimumText.text.toString(), loadCurrentMinimum())
++            val longDuration = parseInt(maximumText.text.toString(), loadCurrentMaximum())
++            val shortLongTimes = ShortLongTimes(shortDuration, longDuration, LimitTime)
++            minimumText.setText(shortLongTimes.shortDuration.sec().toString())
++            maximumText.setText(shortLongTimes.longDuration.sec().toString())
++            mTimeDurationPreference.save(shortLongTimes)
++        }
++        mShortTimeSwitch.setOnClickListener(View.OnClickListener { v: View? ->
++            if (mShortTimeSwitch.isChecked) {
++                enableTime(DurationType.Short, R.id.set_short_at, EnableTimeShortKeyPref)
++                Toast.makeText(this, R.string.toast_enable_short, Toast.LENGTH_SHORT).show()
++            } else {
++                disableTime(DurationType.Short, R.id.set_short_at, EnableTimeShortKeyPref)
++                Toast.makeText(this, R.string.toast_disable_short, Toast.LENGTH_SHORT).show()
++            }
++        })
++        mLongTimeSwitch.setOnClickListener(View.OnClickListener { v: View? ->
++            if (mLongTimeSwitch.isChecked) {
++                enableTime(DurationType.Long, R.id.set_long_at, EnableTimeLongKeyPref)
++                Toast.makeText(this, R.string.toast_enable_long, Toast.LENGTH_SHORT).show()
++            } else {
++                disableTime(DurationType.Long, R.id.set_long_at, EnableTimeLongKeyPref)
++                Toast.makeText(this, R.string.toast_disable_long, Toast.LENGTH_SHORT).show()
++            }
++        })
++        mScheduleSwitch.setOnClickListener(View.OnClickListener setOnClickListener@{ _: View? ->
++            Log.d("LS", "click schedule check box")
++            setScheduleSwitch(mScheduleSwitch.isChecked)
++            if (requireAlarmPermission()) {
++                Log.d("LS", "show permission dialog by click")
++                showPermissionDialog()
++                return@setOnClickListener
++            }
++            updateScheduleUIState()
++        })
++        val openSourceLicenses = findViewById<TextView>(R.id.text_open_source_licenses)
++        openSourceLicenses.setOnClickListener {
++            OssLicensesMenuActivity.setActivityTitle("Open Source Licences")
++            val intent = Intent(this@SettingsActivity, OssLicensesMenuActivity::class.java)
++            intent.putExtra("show_all", true)
++            try {
++                startActivity(intent)
++            } catch (e: Exception) {
++                Log.e("LS", e.toString())
++            }
++        }
++        val privacyPolicy = findViewById<TextView>(R.id.text_privacy_policy)
++        privacyPolicy.setOnClickListener {
++            val url = "https://chaipon.github.io/light-time-switcher-policy/"
++            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
++            startActivity(intent)
++        }
++    }
++
++    private fun showPermissionDialog() {
++        AlertDialog.Builder(this)
++            .setTitle(R.string.schedule_enable_title)
++            .setMessage(R.string.explain_schedule_enable_dialog)
++            .setPositiveButton(R.string.move_button) { dialog: DialogInterface?, which: Int ->
++                val intent = Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM)
++                mSchedulePermissionLauncher.launch(intent)
++            }
++            .setNegativeButton(R.string.cancel_button) { dialog: DialogInterface?, which: Int ->
++                setScheduleSwitch(false)
++            }
++            .show()
++    }
++
++    private fun setScheduleSwitch(enabled: Boolean) {
++        mScheduleSwitch.isChecked = enabled
++        SchedulePreference.Companion.create(applicationContext).save(enabled)
++    }
++
++    private fun updateScheduleUIState() {
++        Log.d("LS", "updateScheduleUIState")
++        val scheduleEnabled = mScheduleSwitch.isChecked
++
++        mShortTimeSwitch.isEnabled = scheduleEnabled
++        mLongTimeSwitch.isEnabled = scheduleEnabled
++
++        mShortTimePicker.isEnabled = scheduleEnabled && !mShortTimeSwitch.isChecked
++        mLongTimePicker.isEnabled = scheduleEnabled && !mLongTimeSwitch.isChecked
++
++        try {
++            if (scheduleEnabled) scheduleAll(applicationContext)
++            else cancelAll(applicationContext)
++        } catch (e: SecurityException) {
++            if (requireAlarmPermission()) {
++                Log.d("LS", "show permission dialog by exception")
++                showPermissionDialog()
++            }
++        }
++    }
++
++    private fun disableTime(durationType: DurationType, viewId: Int, prefKey: String) {
++        val timePicker = findViewById<TimePicker>(viewId)
++        timePicker.isEnabled = true
++        cancel(applicationContext, durationType)
++        EnableTimePreference.Companion.create(applicationContext, prefKey).save(false)
++    }
++
++    private fun enableTime(type: DurationType, viewId: Int, prefKey: String) {
++        val timePicker = findViewById<TimePicker>(viewId)
++        timePicker.isEnabled = false
++        val targetTime = LocalTime.of(timePicker.hour, timePicker.minute)
++        scheduleTimeout(applicationContext, type, targetTime)
++        EnableTimePreference.Companion.create(applicationContext, prefKey).save(targetTime, true)
++    }
++
++    private fun parseInt(inputText: String, defaultTime: Int): Int {
++        return try {
++            inputText.toInt()
++        } catch (e: NumberFormatException) {
++            defaultTime
++        }
++    }
++
++    private fun requireAlarmPermission(): Boolean {
++        if (!mScheduleSwitch.isChecked) return false
++        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return false
++        return !mAlarmManager.canScheduleExactAlarms()
++    }
++
++    private fun canScheduleExactAlarms(): Boolean {
++        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return true
++        return mAlarmManager.canScheduleExactAlarms()
++    }
++
++    private fun loadCurrentMinimum(): Int {
++        return mTimeDurationPreference.short.sec()
++    }
++
++    private fun loadCurrentMaximum(): Int {
++        return mTimeDurationPreference.long.sec()
++    }
++
++    private fun LoadSettings() {
++        Log.d("LS", "start load settings.")
++        loadTimeDurationSettings()
++        loadEnableShortTimeSettings()
++        loadEnableLongTimeSettings()
++        loadScheduleSwitch()
++        updateScheduleUIState()
++        Log.d("LS", "end load settings.")
++    }
++
++    private fun loadScheduleSwitch() {
++        mScheduleSwitch.isChecked =
++            SchedulePreference.Companion.create(applicationContext).isEnabled
++    }
++
++    private fun loadEnableTimeSettings(prefixKey: String, checkBoxId: Int, timePickerId: Int) {
++        val enableTimePreference: EnableTimePreference =
++            EnableTimePreference.Companion.create(applicationContext, prefixKey)
++
++        val checkBox = findViewById<CheckBox>(checkBoxId)
++        checkBox.isChecked = enableTimePreference.isEnabled
++
++        val timePicker = findViewById<TimePicker>(timePickerId)
++        timePicker.hour = enableTimePreference.loadTime().hour
++        timePicker.minute = enableTimePreference.loadTime().minute
++        timePicker.isEnabled = !checkBox.isChecked
++    }
++
++    private fun loadEnableShortTimeSettings() {
++        loadEnableTimeSettings(
++            EnableTimeShortKeyPref,
++            R.id.checkbox_enable_time_to_set_short,
++            R.id.set_short_at
++        )
++    }
++
++    private fun loadEnableLongTimeSettings() {
++        loadEnableTimeSettings(
++            EnableTimeLongKeyPref,
++            R.id.checkbox_enable_time_to_set_long,
++            R.id.set_long_at
++        )
++    }
++
++    private fun loadTimeDurationSettings() {
++        val minimumText = findViewById<EditText>(R.id.editMinimumTime)
++        val maximumText = findViewById<EditText>(R.id.editMaximumTime)
++        minimumText.setText(mTimeDurationPreference.short.sec().toString())
++        maximumText.setText(mTimeDurationPreference.long.sec().toString())
++    }
++
++
++    companion object {
++        private const val SettingEnableMinimumTime: Int = 10
++        private const val SettingEnableMaximumTime: Int = 3600 * 24
++        val LimitTime: LimitTime = LimitTime(SettingEnableMinimumTime, SettingEnableMaximumTime)
++        const val EnableTimeShortKeyPref: String = "enable_time_short_"
++        const val EnableTimeLongKeyPref: String = "enable_time_long_"
++    }
++}
+diff --git a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/ShortLongTimes.java b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/ShortLongTimes.java
+deleted file mode 100644
+index 33c0acf..0000000
+--- a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/ShortLongTimes.java
++++ /dev/null
+@@ -1,13 +0,0 @@
+-package jp.superwooo.chaipon.lighttimeswitcher;
+-
+-public class ShortLongTimes {
+-    private final TimeDurationValue mShort;
+-    private final TimeDurationValue mLong;
+-    public ShortLongTimes(int short_duration, int long_duration, LimitTime limit){
+-        if(short_duration > long_duration) short_duration = long_duration;
+-        mShort = new TimeDurationValue(short_duration, limit);
+-        mLong = new TimeDurationValue(long_duration, limit);
+-    }
+-    public TimeDurationValue getShortDuration(){return mShort;}
+-    public TimeDurationValue getLongDuration(){return mLong;}
+-}
+diff --git a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/ShortLongTimes.kt b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/ShortLongTimes.kt
+new file mode 100644
+index 0000000..f17de07
+--- /dev/null
++++ b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/ShortLongTimes.kt
+@@ -0,0 +1,13 @@
++package jp.superwooo.chaipon.lighttimeswitcher
++
++class ShortLongTimes(short_duration: Int, long_duration: Int, limit: LimitTime) {
++    val shortDuration: TimeDurationValue
++    val longDuration: TimeDurationValue
++
++    init {
++        var short_duration = short_duration
++        if (short_duration > long_duration) short_duration = long_duration
++        shortDuration = TimeDurationValue(short_duration, limit)
++        longDuration = TimeDurationValue(long_duration, limit)
++    }
++}
+diff --git a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/SystemScreenOffTimeoutAccessor.java b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/SystemScreenOffTimeoutAccessor.java
+deleted file mode 100644
+index 126baa8..0000000
+--- a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/SystemScreenOffTimeoutAccessor.java
++++ /dev/null
+@@ -1,28 +0,0 @@
+-package jp.superwooo.chaipon.lighttimeswitcher;
+-
+-import android.content.ContentResolver;
+-import android.content.Context;
+-import android.provider.Settings;
+-
+-public class SystemScreenOffTimeoutAccessor {
+-    private Context mContext;
+-    public static SystemScreenOffTimeoutAccessor create(Context context){
+-        return new SystemScreenOffTimeoutAccessor(context);
+-    }
+-    private SystemScreenOffTimeoutAccessor(Context context){
+-        mContext = context;
+-    }
+-    public TimeDurationValue read(){
+-        ContentResolver cr = mContext.getContentResolver();
+-        try {
+-            int timeOut = Settings.System.getInt(cr, Settings.System.SCREEN_OFF_TIMEOUT) / 1000;
+-            return new TimeDurationValue(timeOut, SettingsActivity.LimitTime);
+-        } catch (Settings.SettingNotFoundException e) {
+-            e.printStackTrace();
+-            return new TimeDurationValue(15, SettingsActivity.LimitTime);
+-        }
+-    }
+-    public void write(TimeDurationValue timeout){
+-        Settings.System.putInt(mContext.getContentResolver(), Settings.System.SCREEN_OFF_TIMEOUT, timeout.milliSecond());
+-    }
+-}
+diff --git a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/SystemScreenOffTimeoutAccessor.kt b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/SystemScreenOffTimeoutAccessor.kt
+new file mode 100644
+index 0000000..ee05bfb
+--- /dev/null
++++ b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/SystemScreenOffTimeoutAccessor.kt
+@@ -0,0 +1,33 @@
++package jp.superwooo.chaipon.lighttimeswitcher
++
++import android.content.Context
++import android.provider.Settings
++import android.provider.Settings.SettingNotFoundException
++import jp.superwooo.chaipon.lighttimeswitcher.LimitTime
++
++class SystemScreenOffTimeoutAccessor private constructor(private val mContext: Context) {
++    fun read(): TimeDurationValue {
++        val cr = mContext.contentResolver
++        try {
++            val timeOut = Settings.System.getInt(cr, Settings.System.SCREEN_OFF_TIMEOUT) / 1000
++            return TimeDurationValue(timeOut, SettingsActivity.Companion.LimitTime)
++        } catch (e: SettingNotFoundException) {
++            e.printStackTrace()
++            return TimeDurationValue(15, SettingsActivity.Companion.LimitTime)
++        }
++    }
++
++    fun write(timeout: TimeDurationValue?) {
++        Settings.System.putInt(
++            mContext.contentResolver,
++            Settings.System.SCREEN_OFF_TIMEOUT,
++            timeout!!.milliSecond()
++        )
++    }
++
++    companion object {
++        fun create(context: Context): SystemScreenOffTimeoutAccessor {
++            return SystemScreenOffTimeoutAccessor(context)
++        }
++    }
++}
+diff --git a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/TimeDurationPreference.java b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/TimeDurationPreference.java
+deleted file mode 100644
+index 50686da..0000000
+--- a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/TimeDurationPreference.java
++++ /dev/null
+@@ -1,58 +0,0 @@
+-package jp.superwooo.chaipon.lighttimeswitcher;
+-
+-import static android.widget.Toast.LENGTH_SHORT;
+-import static android.widget.Toast.makeText;
+-
+-import android.content.SharedPreferences;
+-import android.content.Context;
+-import android.util.Log;
+-
+-import androidx.preference.PreferenceManager;
+-
+-public class TimeDurationPreference {
+-    private Context mContext;
+-    private ShortLongTimes mShortLongTimes;
+-    private static final String MinimumKey = "minimumTime";
+-    private static final String MaximumKey = "maximumTime";
+-    public TimeDurationPreference(Context context){
+-        mContext = context;
+-        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(mContext);
+-        int shortSec = preferences.getInt(MinimumKey, MainActivity.MinTime / 1000);
+-        int longSec = preferences.getInt(MaximumKey, MainActivity.MaxTime / 1000);
+-        mShortLongTimes = new ShortLongTimes(shortSec, longSec, SettingsActivity.LimitTime);
+-    }
+-    public ShortLongTimes getShortLongTimes() {
+-        return mShortLongTimes;
+-    }
+-    public TimeDurationValue getShort(){ return mShortLongTimes.getShortDuration();}
+-    public TimeDurationValue getLong(){ return mShortLongTimes.getLongDuration();}
+-
+-    public TimeDurationValue getDurationValue(DurationType type){
+-        switch (type){
+-            case  Long: return mShortLongTimes.getLongDuration();
+-            case Short: return mShortLongTimes.getShortDuration();
+-            default: throw  new IllegalArgumentException("Unexpected type:" + type);
+-        }
+-    }
+-    public DurationType getType(TimeDurationValue value) {
+-        if(value.equals(mShortLongTimes.getLongDuration()))
+-            return DurationType.Long;
+-        else
+-            return DurationType.Short;
+-    }
+-    public void save(ShortLongTimes shortLongTimes)
+-    {
+-        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(mContext);
+-        SharedPreferences.Editor e = preferences.edit();
+-        int minimum = shortLongTimes.getShortDuration().sec();
+-        int maximum = shortLongTimes.getLongDuration().sec();
+-        e.putInt(MinimumKey, minimum);
+-        e.putInt(MaximumKey, maximum);
+-        e.apply();
+-        Log.d("LS", "save minimum: " + minimum);
+-        Log.d("LS", "save maximum: " + maximum);
+-        String message = mContext.getString(R.string.set_mini_max, minimum, maximum);
+-        makeText(mContext, message, LENGTH_SHORT).show();
+-    }
+-
+-}
+diff --git a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/TimeDurationPreference.kt b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/TimeDurationPreference.kt
+new file mode 100644
+index 0000000..9e8140c
+--- /dev/null
++++ b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/TimeDurationPreference.kt
+@@ -0,0 +1,59 @@
++package jp.superwooo.chaipon.lighttimeswitcher
++
++import android.content.Context
++import android.util.Log
++import android.widget.Toast
++import androidx.preference.PreferenceManager
++import jp.superwooo.chaipon.lighttimeswitcher.LimitTime
++
++class TimeDurationPreference(private val mContext: Context?) {
++    private val shortLongTimes: ShortLongTimes
++
++    init {
++        val preferences = PreferenceManager.getDefaultSharedPreferences(
++            mContext!!
++        )
++        val shortSec = preferences.getInt(MinimumKey, MainActivity.Companion.MinTime / 1000)
++        val longSec = preferences.getInt(MaximumKey, MainActivity.Companion.MaxTime / 1000)
++        shortLongTimes = ShortLongTimes(shortSec, longSec, SettingsActivity.Companion.LimitTime)
++    }
++
++    val short: TimeDurationValue
++        get() = shortLongTimes.shortDuration
++    val long: TimeDurationValue
++        get() = shortLongTimes.longDuration
++
++    fun getDurationValue(type: DurationType?): TimeDurationValue? {
++        return when (type) {
++            DurationType.Long -> shortLongTimes.longDuration
++            DurationType.Short -> shortLongTimes.shortDuration
++            else -> throw IllegalArgumentException("Unexpected type:$type")
++        }
++    }
++
++    fun getType(value: TimeDurationValue?): DurationType {
++        return if (value == shortLongTimes.longDuration) DurationType.Long
++        else DurationType.Short
++    }
++
++    fun save(shortLongTimes: ShortLongTimes) {
++        val preferences = PreferenceManager.getDefaultSharedPreferences(
++            mContext!!
++        )
++        val e = preferences.edit()
++        val minimum = shortLongTimes.shortDuration.sec()
++        val maximum = shortLongTimes.longDuration.sec()
++        e.putInt(MinimumKey, minimum)
++        e.putInt(MaximumKey, maximum)
++        e.apply()
++        Log.d("LS", "save minimum: $minimum")
++        Log.d("LS", "save maximum: $maximum")
++        val message = mContext.getString(R.string.set_mini_max, minimum, maximum)
++        Toast.makeText(mContext, message, Toast.LENGTH_SHORT).show()
++    }
++
++    companion object {
++        private const val MinimumKey = "minimumTime"
++        private const val MaximumKey = "maximumTime"
++    }
++}
+diff --git a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/TimeDurationValue.java b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/TimeDurationValue.java
+deleted file mode 100644
+index 1f109ce..0000000
+--- a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/TimeDurationValue.java
++++ /dev/null
+@@ -1,29 +0,0 @@
+-package jp.superwooo.chaipon.lighttimeswitcher;
+-
+-public class TimeDurationValue {
+-    final private  int mMilliSecond;
+-    final private  int mSecond;
+-    public TimeDurationValue(int second, LimitTime limit){
+-        mSecond = limit.apply(second);
+-        mMilliSecond = mSecond * 1000;
+-    }
+-
+-    @Override
+-    public boolean equals(Object value) {
+-        if(this == value) return true;
+-        if(value == null || getClass() != value.getClass()) return false;
+-
+-        TimeDurationValue other = (TimeDurationValue)value;
+-        return mSecond == other.mSecond;
+-    }
+-    @Override
+-    public int hashCode(){
+-        return Integer.hashCode(mSecond);
+-    }
+-
+-
+-
+-    public int sec(){return mSecond;}
+-    public int milliSecond(){return mMilliSecond;}
+-
+-}
+diff --git a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/TimeDurationValue.kt b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/TimeDurationValue.kt
+new file mode 100644
+index 0000000..cab3fa3
+--- /dev/null
++++ b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/TimeDurationValue.kt
+@@ -0,0 +1,31 @@
++package jp.superwooo.chaipon.lighttimeswitcher
++
++class TimeDurationValue(second: Int, limit: LimitTime) {
++    private val mMilliSecond: Int
++    private val mSecond = limit.apply(second)
++
++    init {
++        mMilliSecond = mSecond * 1000
++    }
++
++    override fun equals(value: Any?): Boolean {
++        if (this === value) return true
++        if (value == null || javaClass != value.javaClass) return false
++
++        val other = value as TimeDurationValue
++        return mSecond == other.mSecond
++    }
++
++    override fun hashCode(): Int {
++        return Integer.hashCode(mSecond)
++    }
++
++
++    fun sec(): Int {
++        return mSecond
++    }
++
++    fun milliSecond(): Int {
++        return mMilliSecond
++    }
++}
+diff --git a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/TimeoutReceiver.java b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/TimeoutReceiver.java
+deleted file mode 100644
+index 80bba41..0000000
+--- a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/TimeoutReceiver.java
++++ /dev/null
+@@ -1,25 +0,0 @@
+-package jp.superwooo.chaipon.lighttimeswitcher;
+-
+-import android.content.BroadcastReceiver;
+-import android.content.Context;
+-import android.content.Intent;
+-import android.util.Log;
+-
+-public class TimeoutReceiver extends BroadcastReceiver {
+-    @Override
+-    public void onReceive(Context context, Intent intent) {
+-        String durationTypeName = intent.getStringExtra(AlarmScheduler.DurationTypeKey);
+-        Log.d("LS", "Time out receive: " + durationTypeName);
+-        DurationService durationService;
+-        try {
+-            durationService =
+-                    DurationType.valueOf(durationTypeName).create(context.getApplicationContext());
+-        }catch (Exception e){
+-            Log.e("LS", "duration type get error" + e.toString());
+-            durationService =
+-                    DurationType.Short.create(context.getApplicationContext());
+-        }
+-        durationService.setTimeOut();
+-        AlarmScheduler.scheduleAll(context.getApplicationContext());
+-    }
+-}
+diff --git a/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/TimeoutReceiver.kt b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/TimeoutReceiver.kt
+new file mode 100644
+index 0000000..3c8b03c
+--- /dev/null
++++ b/app/src/main/java/jp/superwooo/chaipon/lighttimeswitcher/TimeoutReceiver.kt
+@@ -0,0 +1,25 @@
++package jp.superwooo.chaipon.lighttimeswitcher
++
++import android.content.BroadcastReceiver
++import android.content.Context
++import android.content.Intent
++import android.util.Log
++import jp.superwooo.chaipon.lighttimeswitcher.AlarmScheduler.scheduleAll
++
++class TimeoutReceiver : BroadcastReceiver() {
++    override fun onReceive(context: Context, intent: Intent) {
++        val durationTypeName = intent.getStringExtra(AlarmScheduler.DurationTypeKey)
++        Log.d("LS", "Time out receive: $durationTypeName")
++        var durationService: DurationService?
++        try {
++            durationService =
++                DurationType.valueOf(durationTypeName!!).create(context.applicationContext)
++        } catch (e: Exception) {
++            Log.e("LS", "duration type get error$e")
++            durationService =
++                DurationType.Short.create(context.applicationContext)
++        }
++        durationService!!.setTimeOut()
++        scheduleAll(context.applicationContext)
++    }
++}
+diff --git a/build.gradle b/build.gradle
+index d85c5d8..ed01d9b 100644
+--- a/build.gradle
++++ b/build.gradle
+@@ -1,6 +1,7 @@
+ // Top-level build file where you can add configuration options common to all sub-projects/modules.
+ 
+ buildscript {
++    ext.kotlin_version = '1.9.24'
+     repositories {
+         google()
+         mavenCentral()
+@@ -8,6 +9,7 @@ buildscript {
+     dependencies {
+         classpath "com.android.tools.build:gradle:8.5.2"
+         classpath "com.google.android.gms:oss-licenses-plugin:0.10.6"
++        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+ 
+         // NOTE: Do not place your application dependencies here; they belong
+         // in the individual module build.gradle files
