@@ -8,7 +8,7 @@
         <intent
             android:action="android.intent.action.VIEW"
             android:targetPackage="jp.superwooo.chaipon.lighttimeswitcher"
-            android:targetClass="jp.superwooo.chaipon.lighttimeswitcher.SettingsActivity"
+            android:targetClass="jp.superwooo.chaipon.lighttimeswitcher.ui.SettingsActivity"
             >
         </intent>
     </shortcut>
