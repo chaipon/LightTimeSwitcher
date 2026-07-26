@@ -20,10 +20,11 @@ object AlarmScheduler {
     @JvmStatic
     fun scheduleTimeout(context: Context, type: DurationType, scheduleTime: LocalTime) {
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
-        Log.d("LS", "schedule to" + scheduleTime.toString() + ". type: " + type.name)
-        alarmManager.setExact(
+        val scheduleElapsedTime = getElapsedTriggerTime(scheduleTime)
+        Log.d("LS", "schedule to" + scheduleTime.toString() + "[" + scheduleElapsedTime + "]. type: " + type.name)
+        alarmManager.setExactAndAllowWhileIdle(
             AlarmManager.ELAPSED_REALTIME_WAKEUP,
-            getElapsedTriggerTime(scheduleTime),
+            scheduleElapsedTime,
             buildPendingIntent(context, type)
         )
     }
@@ -35,8 +36,10 @@ object AlarmScheduler {
             Log.i("LS", "Invalid delay time: $delayTime")
             delayTime += Duration.ofHours(24).toMillis()
         }
+        var elapsedTime = SystemClock.elapsedRealtime()
         Log.d("LS", "After: " + delayTime + "ms")
-        return SystemClock.elapsedRealtime() + delayTime
+        Log.d("LS", "Current elapsed time: " + elapsedTime + "ms")
+        return elapsedTime + delayTime
     }
 
     @JvmStatic
